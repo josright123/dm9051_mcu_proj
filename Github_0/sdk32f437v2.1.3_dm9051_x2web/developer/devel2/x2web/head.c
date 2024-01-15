@@ -1,7 +1,9 @@
 #include "lwip/timeouts.h"
 //#include "lwip/apps/mqtt.h"
 //#include "lwip/apps/mqtt_priv.h"
+#if 0
 #include "netconf.h"
+#endif
 //#include "main.h" //#include "developer_conf.h"
 #include "developer_conf.h" //#include "main.h" //#include "developer_conf.h"
 

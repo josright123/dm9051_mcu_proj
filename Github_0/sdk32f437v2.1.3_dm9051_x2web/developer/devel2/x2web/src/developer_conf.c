@@ -67,19 +67,6 @@ const struct mqtt_connect_client_info_t mqtt_connect_info = {
 #define MQTT_BROKER_IP					DECLARATION_BROKER_IPADDR
 #define MQTT_BROKER_LISTEN_PORT			DECLARATION_BROKER_LISTEN_PORT
 
-char *get_application_name(void) {
-	return APPLICATION_NAME;
-}
-
-char *get_application_banner(void)
-{
-	return APPLICATION_BANNER;
-}
-char *get_application_date(void)
-{
-	return APPLICATION_DATE;
-}
-
 char *lwip_get_broker_ipe(void)
 {
 	return MQTT_BROKER_IP;
@@ -90,9 +77,10 @@ uint16_t get_broker_listen_port(void)
 	return MQTT_BROKER_LISTEN_PORT;
 }
 
-
-DECLARATION_LOCAL_IPADDR;
 DECLARATION_MAC_ADDR; //'mac_addresse'
+#if (!LWIP_DHCP)
+DECLARATION_LOCAL_IPADDR;
+#endif
 
 #ifdef ETHERNETIF_COPY
 void lwip_copy_ip_addresse(uint8_t *ipadr)
@@ -129,66 +117,19 @@ uint8_t *lwip_get_qw_addresse(void) {
 //  memcpy(adr, &mac_addresse[mstep_get_net_index()][0], MAC_ADDR_LENGTH);
 //}
 uint8_t *lwip_get_mac_addresse1(void){
-	int i = mstep_get_net_index();
+	#if 0
+	//int i = mstep_get_net_index();
+	uint8_t *p = &mac_addresse[mstep_get_net_index()][0];
+	printf("lwip_get_mac_addresse1 -> mac_addresse[%d][0]\r\n", mstep_get_net_index());
+	printf("ptr is %02x%02x%02x%02x%02x%02x, ", *p++, *p++,*p++,*p++,*p++,*p++);
+	printf("array is %02x%02x%02x%02x%02x%02x\r\n", mac_addresse[mstep_get_net_index()][0],
+		mac_addresse[mstep_get_net_index()][1],mac_addresse[mstep_get_net_index()][2],
+		mac_addresse[mstep_get_net_index()][3],mac_addresse[mstep_get_net_index()][4],
+		mac_addresse[mstep_get_net_index()][5]);
+	#endif
+	
 	return &mac_addresse[mstep_get_net_index()][0];
 }
-
-
-/* owner is head2.c */
-
-timretype_t linkhandler_type(void) //get
-{
-	return linkhandler_info[mstep_get_net_index()].timer_type;
-}
-
-timretype_t publishhandler_type(void) //get
-{
-	return publishhandler_info.timer_type;
-}
-
-#if 0
-void set_mqtt_sending_state(mqtt_sending_t state)
-{
-	mqttpingreq_sending_cyclictmr = state;
-}
-
-mqtt_sending_t mqtt_sending_state(void) //get
-{
-	return mqttpingreq_sending_cyclictmr;
-}
-#endif
-
-
-//. volatile uint32_t publish_init_timer1;// = 0;
-//. volatile uint32_t publish_send_timer1;// = MQTT_CLIENT_PUBLISH0_MS; //get_publish_send_ms(0); //test_pub_ms[0]; //MQTT_CLIENT_PUBLISH0_MS;
-//. volatile uint32_t publish_init_timer2;// = 0;
-//. volatile uint32_t publish_send_timer2;// = MQTT_CLIENT_PUBLISH1_MS; //get_publish_send_ms(1); //test_pub_ms[1]; //MQTT_CLIENT_PUBLISH1_MS;
-
-#if MQTT_CLIENT_SUPPORT
-	volatile uint16_t publish_init_and_disp_timer[MQTT_MAX_PUBLISH_TOPIC_NUM]; //uint32_t
-	static volatile uint32_t publish_send_timer[MQTT_MAX_PUBLISH_TOPIC_NUM];
-
-	uint16_t get_publish_disp_time(int i) {
-		return publish_init_and_disp_timer[i];
-	}
-	void set_publish_disp_time(int i, uint16_t val) {
-		publish_init_and_disp_timer[i] = val;
-	}
-
-	uint32_t get_publish_expr_time(int i) {
-		return publish_send_timer[i];
-	}
-	static void set_publish_expr_time(int i, uint32_t valbit32) {
-		publish_send_timer[i] = valbit32;
-	}
-
-	void publish_handle_init(void)
-	{
-		int i; 
-		for (i = 0; i < get_mqtt_publish_topic_number(); i++) // MQTT_CLIENT_PUBLISH_TOPIC_NUM v.s. MQTT_MAX_PUBLISH_TOPIC_NUM
-			set_publish_expr_time(i, 0);
-	}
-#endif
 
 #if MQTT_CLIENT_SUPPORT
 	int publish_handle_expire(uint32_t expr_time)
@@ -299,68 +240,4 @@ mqtt_sending_t mqtt_sending_state(void) //get
 			#endif
 		}
 	}
-#endif
-
-uint16_t get_link_handler_ms(void) {
-	return linkhandler_info[mstep_get_net_index()].hdlr_ms; //MQTT_CLIENT_LINK_TMR_MS;
-}
-uint16_t get_publish_handler_ms(void) {
-	return publishhandler_info.hdlr_ms; //MQTT_CLIENT_PUBLISH_TMR_MS;
-}
-
-#if MQTT_CLIENT_SUPPORT
-int get_mqtt_max_publish_num(void) {
-	return ptc.max_num; //MQTT_MAX_PUBLISH_TOPIC_NUM;
-}
-
-int get_mqtt_max_subscribe_num(void) { //only const. (for info display)
-	return stc.max_num; //MQTT_MAX_SUBSCRIBE_TOPIC_NUM;
-}
-	
-int get_mqtt_publish_topic_number(void) {
-	return ptc.num; //MQTT_CLIENT_PUBLISH_TOPIC_NUME;
-}
-int get_mqtt_subscribe_topic_number(void) {
-	return stc.num; //MQTT_CLIENT_SUBSCRIBE_TOPIC_NUME;
-}
-#endif
-
-#if 0
-DECLARATION_PUB_TOPICS;
-DECLARATION_PUB_QOSS;
-DECLARATION_PUB_MS;
-#endif
-
-#if MQTT_CLIENT_SUPPORT
-const char *get_publish_topic(int i)
-{
-	return ptc.topic[i]; //return demo_pub_topics[i];
-}
-
-uint8_t get_publish_qos(int i)
-{
-	return ptc.qos[i]; //return demo_pub_qos[i]; //MQTT_CLIENT_PUBLISH_TOPIC0_QOS;
-}
-
-uint16_t get_publish_send_ms(int i)
-{
-	return ptc.ms[i]; //return demo_pub_ms[i]; //MQTT_CLIENT_PUBLISH0_MS;
-}
-#endif
-
-#if 0
-DECLARATION_SUB_QOSS;
-DECLARATION_SUB_TOPICS;
-#endif
-
-#if MQTT_CLIENT_SUPPORT
-const char *get_subscribe_topic(int i)
-{
-	return stc.topic[i]; //demo_sub_topic[i];
-}
-
-uint8_t get_subscribe_qos(int i)
-{
-	return stc.qos[i]; //demo_sub_qos[i];
-}
 #endif

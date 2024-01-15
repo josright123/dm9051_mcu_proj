@@ -45,6 +45,9 @@
 #include "netconf.h"
 #include "developer_conf.h"
 
+#include "netconf.h"
+#include "testproc/testproc_lw.h"
+
 /* Network interface name */
 #define IFNAME0 'd'
 #define IFNAME1 'm'
@@ -59,10 +62,22 @@ union {
 
 uint8_t tmpMACaddr[ETHERNET_COUNT][6];
 
+#if 1
+//.extern union {
+//.	uint8_t rx;
+//.	uint8_t tx;
+//.} EthBuff[RXBUFF_OVERSIZE_LEN]; //[Single Task project.] not occupied by concurrently used.
+uint8_t *get_rx_buffer(void) {
+	return &EthBuff[0].rx;
+}
+uint8_t *get_tx_buffer(void) {
+	return &EthBuff[0].tx;
+}
 u8 *get_eth_buff(void)
 {
 	return &EthBuff[0].tx;
 }
+#endif
 
 void lwip_set_mac(uint8_t* macadd)
 {
@@ -87,23 +102,6 @@ void lwip_get_mac(uint8_t *adr)
 //	tmpMACaddr[1][0],tmpMACaddr[1][1],tmpMACaddr[1][2],tmpMACaddr[1][3],tmpMACaddr[1][4],tmpMACaddr[1][5]);
 }
 
-void GpioDisplay(void)
-{
-  int i;
-  printf("\r\n");
-//#if (_ETHERNET_COUNT >= 2)
-//do {
-  for (i = 0; i < ETHERNET_COUNT; i++) {
-	mstep_set_net_index(i);
-	printf("@ETHERNET INTERFACE      %s\r\n", mstep_conf_cpu_spi_ethernet());
-  }
-  mstep_set_net_index(0);
-//} while(0);
-//#elif (_ETHERNET_COUNT == 1)
-//  printf("@ETHERNET INTERFACE      %s\r\n", mstep_conf_cpu_spi_ethernet());
-//#endif
-}
-
 void dm9051_init_nondual(void)
 {
 	//int i; //_n_verify_id = 0;
@@ -111,16 +109,16 @@ void dm9051_init_nondual(void)
 	//printf(".dm9051_init_dual().s\r\n");
 	
 	//for (i = 0; i < ETHERNET_COUNT; i++) { //get_eth_interfaces()
-		uint8_t adr[6];
+		uint8_t addr[6];
 		uint16_t id;
 		//i = mstep_get_net_index(); //mstep_set_net_index(i); //set_pin_code(i);
-		lwip_get_mac(adr);
+		lwip_get_mac(addr);
 		//dm9051_poweron_rst();
 		//delay_ms(1);
-		id = 
-		  dm9051_init(adr);
+		id = dm9051_init(addr);
 		//_display_verify_chipid("dm9051_init", mstep_spi_conf_name(), id);
-		 if (display_verify_chipid("dm9051_init", mstep_spi_conf_name(), id))
+		//_if (display_verify_chipid("dm9051_init", mstep_spi_conf_name(), id))
+		 if (check_chip_id(id))
 			 n_verify_id++;
 	//}
 	
@@ -186,12 +184,13 @@ void dm9051_init_nondual(void)
 
 uint16_t dm9051_link_update_dual(void)
 {
-	int i;
+	//int i;
 	uint16_t updwn;
-//#if (_ETHERNET_COUNT > 1) 
-	for (i = 0; i < ETHERNET_COUNT; i++) { //get_eth_interfaces()
-		mstep_set_net_index(i); //set_pin_code(i);
-		updwn = dm9051_link_update();
+	
+	//for (i = 0; i < ETHERNET_COUNT; i++) { //get_eth_interfaces()
+		//mstep_set_net_index(i); //set_pin_code(i);
+	
+		updwn = dm9051_link_update(); // Current 'mstep_get_net_index' is OK.
 		
 	  //printf("[dm9051_link_update_dual].dm9051_link_update[%d] = result %d\r\n", i, updwn);
 		
@@ -199,10 +198,7 @@ uint16_t dm9051_link_update_dual(void)
 			
 			return 1; //break;
 		}
-	}
-//#else
-//	updwn = dm9051_link_update();
-//#endif
+	//}
 	return 0; //return updwn;
 }
 void dm9051_tx_dual(uint8_t *buf, uint16_t len)
@@ -213,8 +209,14 @@ void dm9051_tx_dual(uint8_t *buf, uint16_t len)
 	//	mstep_set_net_index(i); //set_pin_code(i);
 	//	dm9051_tx(buf, len); //on_pin_code("dm9051_tx", 0);
 	//}
+	dm9051_txlog_monitor_tx_all(2, buf, len); //_dm9051_txlog_monitor_tx
 	dm9051_tx(buf, len);
-	dm9051_txlog_monitor_tx(2, buf, len);
+	
+	if (!tp_all_done()) {
+		txlen_show_rxwp(len);
+		bannerline();
+	}
+	
 //#else
 //	dm9051_tx(buf, len);
 //#endif
@@ -257,6 +259,11 @@ low_level_init(struct netif *netif)
   /* device capabilities */
   /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
   netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
+
+	
+  //.printf("  ...test mstep_get_net_index() %d, %s, with %02x%02x%02x%02x%02x%02x\r\n", i, mstep_spi_conf_name(),
+  //.		netif->hwaddr[0], netif->hwaddr[1], netif->hwaddr[2], netif->hwaddr[3], netif->hwaddr[4], netif->hwaddr[5]);
+	
   dm9051_init_nondual(); //dm9051_init(MACaddr);
 }
 
@@ -284,7 +291,7 @@ low_level_output(struct netif *netif, struct pbuf *p)
 }
 
 	static struct pbuf *
-	low_level_inp(struct netif *netif)
+	low_level_inp(void) //(struct netif *netif)
 	{
 	  struct pbuf *p, *q;
 	  uint16_t len;
@@ -357,7 +364,7 @@ err_t ethernetif_inp(struct netif *netif)
 	  err_t err;
 	  struct pbuf *p;
 
-	  p = low_level_inp(netif);
+	  p = low_level_inp(); //(netif);
 	  if (p == NULL) 
 		return ERR_INPROGRESS; //JJ.
 
@@ -483,7 +490,7 @@ err_t ethernetif_init(struct netif *netif)
 #ifndef AT32F437xx
 int test_line7_enter = 0;
 uint8_t my_debounce = 0;
-void line7_proc(void) {
+void ethernetif_line7_proc(void) {
 	
   uint8_t isr;
   isr = cspi_read_reg(DM9051_ISR);
@@ -533,6 +540,6 @@ void line7_proc(void) {
 }
 #endif
 
-void reset_proc(void) {
+void ethernetif_reset_proc(void) {
 	dm9051_reset_process();
 }

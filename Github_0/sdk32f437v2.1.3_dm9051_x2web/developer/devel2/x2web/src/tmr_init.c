@@ -35,7 +35,7 @@
   * @retval none
   */
 #if 0
-void at32_dm9051_tmr_init(void)
+void tmr_init(void)
 {
   /* tmr5 configuration */
   crm_clocks_freq_type crm_clocks_freq_struct = {0};
@@ -60,7 +60,7 @@ void at32_dm9051_tmr_init(void)
 }
 #endif
 #if 1
-void at32_dm9051_tmr_init(void)
+void tmr_init(void)
 {
   /* tmr1 configuration */
   crm_clocks_freq_type crm_clocks_freq_struct = {0};

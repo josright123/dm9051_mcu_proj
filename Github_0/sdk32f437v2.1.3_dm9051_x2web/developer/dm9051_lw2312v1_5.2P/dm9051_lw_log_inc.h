@@ -81,36 +81,41 @@ void dm_check_tx(const uint8_t *buf, size_t len);
   /* dm_check_rx(buffer, len); */ \
 	} while(0)
 
-#define function_monitor_tx(hdspc, titlen, headstr, buffer, len) \
+#define function_monitor_tx(hdspc, ttn, headstr, buffer, len) \
 	do { \
-	if (headstr) \
-	  sprint_hex_dump0(hdspc, titlen, headstr, len, 32, buffer, 0, (len < 66) ? len : 66, FALSE); /*, TRUE, DGROUP_NONE */ \
-	else \
-	  sprint_hex_dump0(hdspc, titlen, "dm9 monitor   tx>>", len, 32, buffer, 0, (len < 66) ? len : 66, FALSE); /*, TRUE, DGROUP_NONE */ \
 	dm_check_tx(buffer, len); \
+	if (headstr) \
+	  sprint_hex_dump0(hdspc, ttn, headstr, len, 32, buffer, 0, (len < 66) ? len : 66, FALSE); /*, TRUE, DGROUP_NONE */ \
+	else \
+	  sprint_hex_dump0(hdspc, ttn, "dm9 monitor   tx>>", len, 32, buffer, 0, (len < 66) ? len : 66, FALSE); /*, TRUE, DGROUP_NONE */ \
+	/*dm_check_tx(buffer, len);*/ \
 	} while(0)
 
-#define function_monitor_tx_all(hdspc, buffer, len) \
-	sprint_hex_dump0(hdspc, 0, "dm9 monitor   tx>>", len, 32, buffer, 0, /*len*/ 38, TRUE); /*, TRUE, DGROUP_NONE */ \
-	/*printf("\r\n");*/ \
-	dm_check_tx(buffer, len)
+#define function_monitor_tx_all(hdspc, ttn, heads, buffer, len) \
+	do { \
+	dm_check_tx(buffer, len); \
+	if (heads) \
+		sprint_hex_dump0(hdspc, ttn, heads, len, 32, buffer, 0, (len < 50) ? len : 50, TRUE); /*, TRUE, DGROUP_NONE */ \
+	else \
+		sprint_hex_dump0(hdspc, ttn, "dm9 monitor-all   tx>>", len, 32, buffer, 0, (len < 50) ? len : 50, TRUE); /*, TRUE, DGROUP_NONE */ \
+	} while(0)
 #else
 
 //NOT [place at dm9051opts.h]
-//.#define	function_monitor_rx(hdspc, buffer, len)
-//.#define	function_monitor_rx_all(hdspc, buffer, len)
-//.#define function_monitor_tx(hdspc, buffer, len)
-//.#define function_monitor_tx_all(hdspc, buffer, len)
+//.#define	_function_monitor_rx(hdspc, buffer, len)
+//.#define	_function_monitor_rx_all(hdspc, buffer, len)
+//.#define _function_monitor_tx(hdspc, buffer, len)
+//.#define _function_monitor_tx_all(hdspc, buffer, len)
 
-//#undef function_monitor_rx
-//#undef function_monitor_rx_all
-//#undef function_monitor_tx
-//#undef function_monitor_tx_all
+//#undef _function_monitor_rx
+//#undef _function_monitor_rx_all
+//#undef _function_monitor_tx
+//#undef _function_monitor_tx_all
 
 #define function_monitor_rx(hdspc, buffer, len)
 #define function_monitor_rx_all(hdspc, headstr, buffer, len)
-#define function_monitor_tx(hdspc, titlen, headstr, buffer, len)
-#define function_monitor_tx_all(hdspc, buffer, len)
+#define function_monitor_tx(hdspc, ttn, headstr, buffer, len)
+#define function_monitor_tx_all(hdspc, ttn, heads, buffer, len)
 
 #endif
 

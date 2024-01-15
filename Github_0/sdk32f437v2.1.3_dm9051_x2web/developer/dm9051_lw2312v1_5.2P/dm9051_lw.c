@@ -48,10 +48,12 @@ static void dm9051_set_par(const uint8_t *macadd);
 static void dm9051_set_mar(void);
 static void dm9051_set_recv(void);
 
-static u8 lw_flag;
-static u16 unlink_count, unlink_stamp;
+#if 0 //[Since lwip_rx_hdlr()/lwip_rx_loop_handler() can do check the link-state in advance, so this logic can then discard!]
+static u8 lw_flag[ETHERNET_COUNT];
+static u16 unlink_count[ETHERNET_COUNT], unlink_stamp[ETHERNET_COUNT];
+#endif
 
-#define UNLINK_COUNT_RESET	60000
+#define UNLINK_COUNT_RESET	10000 //30000 //60000
 
 #if 0
 static void DM9051_Poweron_Reset(void)
@@ -132,24 +134,29 @@ int check_chip_id(uint16_t id) {
 }
 
 uint16_t read_chip_id(void) {
-	uint16_t id;
+	u8 buff[2];
+	//uint16_t id;
 	
-	//if (dm9051opts_longcsmode())
-	//u8 buff[2]; cspi_read_regsS(DM9051_PIDL, buff, 2);
+	//if (dm9051opts_csmode())
+	//u8 buff[2]; _cspi_read_regsS(DM9051_PIDL, buff, 2);
+	cspi_read_regs(DM9051_PIDL, buff, 2, CS_EACH);
+	return buff[0] | buff[1] << 8;
 	
-	do {
+	/*do {
 		u8 val;
 		val = DM9051_Read_Reg(DM9051_PIDH);
 		id = val << 8;
 		val = DM9051_Read_Reg(DM9051_PIDL);
 		id |= val;
 	} while(0);
-	return id;
+	return id;*/
 }
 
 void read_chip_revision(u8 *ids, u8 *rev_ad) {
+	cspi_read_regs(DM9051_VIDL, ids, 5, csmode()); //dm9051opts_csmode_tcsmode()
+	cspi_read_regs(0x5C, rev_ad, 1, csmode()); //dm9051opts_csmode_tcsmode()
 #if 1
-	if (dm9051opts_longcsmode()) {
+	/*if (dm9051opts_csmode()) {
 	cspi_read_regsS(DM9051_VIDL, ids, 5);
 	cspi_read_regsS(0x5C, rev_ad, 1);
 	} else {
@@ -159,8 +166,27 @@ void read_chip_revision(u8 *ids, u8 *rev_ad) {
 	ids[3] = DM9051_Read_Reg(DM9051_PIDH);
 	ids[4] = DM9051_Read_Reg(DM9051_CHIPR);
 	*rev_ad = DM9051_Read_Reg(0x5C); //(0x5C)
-	}
+	}*/
 #endif
+}
+
+uint16_t eeprom_read(uint16_t wordnum)
+{
+	u16 uData;
+	do {
+		int w = 0;
+		DM9051_Write_Reg(DM9051_EPAR, wordnum);
+		DM9051_Write_Reg(DM9051_EPCR, 0x4); // chip is reading
+		dm_delay_us(1);
+		while(DM9051_Read_Reg(DM9051_EPCR) & 0x1) {
+			dm_delay_us(1);
+			if (++w >= 500) //5
+				break;
+		} //Wait complete
+		DM9051_Write_Reg(DM9051_EPCR, 0x0);
+		uData = (DM9051_Read_Reg(DM9051_EPDRH) << 8) | DM9051_Read_Reg(DM9051_EPDRL);
+	} while(0);
+	return uData;
 }
 
 //static 
@@ -181,12 +207,14 @@ uint16_t phy_read(uint16_t uReg)
 	DM9051_Write_Reg(DM9051_EPCR, 0x0);
 	uData = (DM9051_Read_Reg(DM9051_EPDRH) << 8) | DM9051_Read_Reg(DM9051_EPDRL);
 	
+	#if 0
 	if (uReg == PHY_STATUS_REG) {
 		if (uData  & PHY_LINKED_BIT)
 			dm9051_set_flags(lw_flag, DM9051_FLAG_LINK_UP);
 		else
 			dm9051_clear_flags(lw_flag, DM9051_FLAG_LINK_UP);
 	}
+	#endif
 		
 	return uData;
 }
@@ -217,34 +245,36 @@ void test_plan_mbndry(void)
 		char *str0, *str1;
 		//int startup, chkread;
 		
-		printf(": usage with iomode :      %s\r\n", dm9051opts_desciomode());
+		//.printf(": usage with iomode :      %s\r\n", dm9051opts_desciomode());
 		
 		isr = DM9051_Read_Reg(DM9051_ISR);
-		printf("RESET: isr.read.s %02x %s mode\r\n", isr, isr & 0x80 ? "8-bit" : "16-bit");
+		printf("  RESET: isr.read.s %02x %s mode\r\n", isr, isr & 0x80 ? "8-bit" : "16-bit");
 		
-		mbndry0 = dm9051opts_iomode(); //MBNDRY_DEFAULT;
+		mbndry0 = iomode(); //dm9051opts_iomode(), MBNDRY_DEFAULT;
+		DM9051_Write_Reg(DM9051_MBNDRY, mbndry0);
 		//startup = (mbndry0 & MBNDRY_BYTE);
 		//str0 = (mbndry0 & MBNDRY_BYTE) ? "8-bit" : "16-bit";
 		//;printf("RESET: While Start up DM9051_MBNDRY %02x %s mode\r\n", mbndry0, str0);
 		
 		mbndry1 = DM9051_Read_Reg(DM9051_MBNDRY);
 		//chkread = (mbndry1 & MBNDRY_BYTE);
+		
 		str1 = (mbndry1 & MBNDRY_BYTE) ? "8-bit" : "16-bit";
 		if ((mbndry0 & MBNDRY_BYTE) == (mbndry1 & MBNDRY_BYTE))
-			printf("RESET: With CheckRead DM9051_MBNDRY %02x %s mode\r\n", mbndry1, str1);
+			printf("  RESET: With CheckRead DM9051_MBNDRY %02x %s mode\r\n", mbndry1, str1);
 		else
-			printf("RESET: With CheckRead DM9051_MBNDRY %02x %s mode (read diff, be an elder revision chip bit7 can't write)\r\n", 
+			printf("  RESET: With CheckRead DM9051_MBNDRY %02x %s mode (read diff, be an elder revision chip bit7 can't write)\r\n", 
 				mbndry1, str1);
 		
 		str0 = (mbndry0 & MBNDRY_BYTE) ? "8-bit" : "16-bit";
-		printf("RESET: While Start up DM9051_MBNDRY %02x %s mode\r\n", mbndry0, str0);
+		printf("  RESET: While Start up DM9051_MBNDRY %02x %s mode\r\n", mbndry0, str0);
 		
 		isr = DM9051_Read_Reg(DM9051_ISR);
-		printf("RESET: isr.read.e %02x %s mode\r\n", isr, isr & 0x80 ? "8-bit" : "16-bit");
+		printf("  RESET: isr.read.e %02x %s mode\r\n", isr, isr & 0x80 ? "8-bit" : "16-bit");
 	} while(0);
 }
 
-void test_plan_100mf(void)
+void test_plan_100mf(ncrmode_t ncrmode, u8 first_log)
 {
 	//
 	// explicity, phy write bmcr, 0x3300, 
@@ -254,69 +284,108 @@ void test_plan_100mf(void)
 	// observ, AN did take some more time to link up state
 	// compare to non AN.
 	//
-	//if (dm9051opts_ncrmode()) {
+	//if (_dm9051opts_ncrforcemode()) {
 	  #if 1
 		//[dm9052]
-		do {
-			uint16_t bmcr;
+		if (ncrmode == NCR_FORCE_100MF) {
 			phy_write(27, 0xe000);
 			phy_write(0, 0x2100);
-			bmcr= phy_read(0);
-			printf("RESET: REG27 write : %04x\r\n", 0xe000);
-			printf("RESET: BMCR write/read : %04x/%04x\r\n", 0x2100, bmcr);
-			printf("RESET: dm9051_core_reset [set link parameters, Force mode for 100M Full]\r\n");
-		} while(0);
-	  #else
+			if (first_log) {
+				uint16_t bmcr= phy_read(0);
+				printf("  RESET: REG27 write : %04x\r\n", 0xe000);
+				printf("  RESET: BMCR write/read : %04x/%04x\r\n", 0x2100, bmcr);
+				printf("  RESET: dm9051_core_reset [set link parameters, Force mode for 100M Full]\r\n");
+			}
+		}
 		//[dm9051c]
-		do {
-			uint16_t bmcr;
+		else if (ncrmode == NCR_AUTO_NEG) {
 			phy_write(0, 0x3300);
-			bmcr= phy_read(0);
-			bannerline();
-			printf("RESET: BMCR write/read : %04x/%04x\r\n", 0x3300, bmcr);
-			printf("RESET: dm9051_core_reset [set link parameters, A.N. for 100M Full]\r\n");
-		} while(0);
+			if (first_log) {
+				uint16_t bmcr= phy_read(0);
+				printf("  RESET: BMCR write/read : %04x/%04x\r\n", 0x3300, bmcr);
+				printf("  RESET: dm9051_core_reset [set link parameters, A.N. for 100M Full]\r\n");
+			}
+		}
 	  #endif
 	//}
 }
 
-void test_plan_rx_checksum_enable(void)
+#if 0
+void test_plan_rx_checksum_enable(void) //(u8 first_log)
 {
+	/*
 	//printf(": test add tx_checksum offload\r\n");
-	printf("RESET: test rx_checksum offload enable (write_reg, 0x32, (1 << 1))\r\n");
+	if (first_log)
+		printf("  RESET: test rx_checksum offload enable (write_reg, 0x32, (1 << 1))\r\n");
 	//printf(": test rx_checksum offload enable (checksumchecking RCSSR_UDPS/RCSSR_TCPS/RCSSR_IPS\r\n");
 	//printf("\r\n");
+	*/
 	DM9051_Write_Reg(DM9051_RCSSR, RCSSR_RCSEN);
 }
-	
+#endif
+
 static void dm9051_core_reset(void)
 {
 //u8 gpcr = DM9051_Read_Reg(DM9051_GPCR);
 //DM9051_Write_Reg(DM9051_GPCR, gpcr | 0x01); //bit-0
+	  printf("  dm9051_core_reset()\r\n");
 	  DM9051_Write_Reg(DM9051_GPR, 0x00);		//Power on PHY
 	  dm_delay_ms(1);
+	#if 0
 	  dm9051_clear_flags(lw_flag, DM9051_FLAG_LINK_UP);
 	  unlink_count = unlink_stamp = 0;
-
+	#endif
 	  DM9051_Write_Reg(DM9051_NCR, DM9051_REG_RESET); //iow(DM9051_NCR, NCR_RST);
 	  //printf("DM9051_MBNDRY: MBNDRY_WORD\r\n");
-	DM9051_Write_Reg(DM9051_MBNDRY, dm9051opts_iomode()); /* MemBound MBNDRY_DEFAULT: MBNDRY_WORD/MBNDRY_BYTE*/
+	DM9051_Write_Reg(DM9051_MBNDRY, iomode()); /* dm9051opts_iomode(), MemBound MBNDRY_DEFAULT: MBNDRY_WORD/MBNDRY_BYTE*/
 	  DM9051_Write_Reg(DM9051_PPCR, PPCR_PAUSE_COUNT); //iow(DM9051_PPCR, PPCR_SETTING); //#define PPCR_SETTING 0x08
 	  DM9051_Write_Reg(DM9051_LMCR, LMCR_MODE1);
 #if 1
 	  DM9051_Write_Reg(DM9051_INTR, INTR_ACTIVE_LOW); // interrupt active low
 #endif
-#if TEST_PLAN_MODE //TestMode
-	bannerline();
 	
-	test_plan_mbndry();
+#if TEST_PLAN_MODE == 0 //!TestMode
 	
-	if (dm9051opts_ncrmode())
-	  test_plan_100mf();
+  #if 0
+	// ...
+	/* if (is_dm9051opts_rxmode_checksum_offload())
+			//test_plan_rx_checksum_enable(void)=
+			DM9051_Write_Reg(DM9051_RCSSR, RCSSR_RCSEN); */
+  #endif
+	//flow_control_config_init(void)=
+	if (is_dm9051opts_flowcontrolmode()) {
+		printf("core_reset: %s, fcr value %02x\r\n", dm9051opts_descflowcontrolmode(), FCR_DEFAULT_CONF);
+		DM9051_Write_Reg(DM9051_FCR, FCR_DEFAULT_CONF);
+	}
+
+#elif TEST_PLAN_MODE == 1 //TestMode
+	do {
+		int i = mstep_get_net_index();
+		
+		if (first_log_get(i)) {
+		  //bannerline();
+		  test_plan_mbndry();
+		} else {
+		  uint8_t mbndry0 = iomode(); //dm9051opts_iomode(); //MBNDRY_DEFAULT;
+		  DM9051_Write_Reg(DM9051_MBNDRY, mbndry0);
+		}
+		
+		//if (dm9051opts_ncrforcemode())
+		test_plan_100mf(ncrmode(), first_log_get(i)); //dm9051opts_ncrmode_tncrmode()
+
+		if (isrxmode_checksum_offload())
+			DM9051_Write_Reg(DM9051_RCSSR, RCSSR_RCSEN); //test_plan_rx_checksum_enable(); //(first_log_get(i))
+		
+		if (isflowcontrolmode()) { //(_dm9051optsex[mstep_get_net_index()]._flowcontrolmode)
+			//printf("  RESET: %s, fcr value %02x\r\n", dm9051opts_descflowcontrolmode(), FCR_DEFAULT_CONF);
+			DM9051_Write_Reg(DM9051_FCR, FCR_DEFAULT_CONF);
+		} //else
+			//printf("  RESET: %s\r\n", dm9051opts_descflowcontrolmode());
+		
+		first_log_clear(i);
+	} while(0);
 #endif
-#if TEST_PLAN_MODE //TestMode
-	test_plan_rx_checksum_enable();
-#endif
+	//.bannerline();
 }
 
 static void dm9051_show_rxbstatistic(u8 *htc, int n)
@@ -369,14 +438,14 @@ static void dm9051_set_mar(void)
 static void dm9051_set_recv(void)
 {
 #if 0
-	DM9051_Write_Reg(DM9051_FCR, FCR_DEFAULT); //iow(DM9051_FCR, FCR_FLOW_ENABLE);
-	phy_write 04, flow
+	DM9051_Write_Reg(_DM9051_FCR, _FCR_DEFAULT_CONF); Located in 'dm9051 core reset'!
+	phy_write _04, _flow
 #endif
 
 	DM9051_Write_Reg(DM9051_IMR, IMR_PAR | IMR_PRM); //iow(DM9051_IMR, IMR_PAR | IMR_PTM | IMR_PRM);
 	
 	//#if _TEST_PLAN_MODE //TestPlan
-	if (dm9051opts_promismode()) {
+	if (promismode()) { //dm9051opts_promismode()
 		printf("SETRECV: test rx_promiscous (write_reg, 0x05, (1 << 2))\r\n");
 		DM9051_Write_Reg(DM9051_RCR, RCR_DEFAULT | RCR_PRMSC | RCR_RXEN); //promiscous
 	}
@@ -412,12 +481,14 @@ static void dm9051_delay_in_core_process(uint16_t nms) //finally, dm9051_lw.c
 
 void dm9051_reset_process(void)
 {
+	printf(".(Rst.process) _dm9051f _core_reset.\r\n");
 	dm9051_core_reset(); //As: printf("rstc %d ,because rxb %02x (is %d times)\r\n", rstc, rxbyte, times);
   #if 0
 	printf("dm9051_core_reset: "); dm9051_delay_in_core_process(300);
   #else
 	printf("dm9051_core_reset: "); dm9051_delay_in_core_process(0);
   #endif
+
   #if 0
 	do { //[want more]
 		//void tcpip_set_mac_address(void); //#include "netconf.h" (- For power on/off DM9051 demo-board, can restored working, Keep Lwip all no change.)
@@ -428,6 +499,7 @@ void dm9051_reset_process(void)
 		.dm9051_mac_adr(macadd);
 	} while(0);
   #endif
+
 	dm9051_set_recv(); //of _dm9051_rx_mode();
 	//dm9051_link_show(); //dm9051_show_link(); //_dm9051_show_timelinkstatistic(); //Add: show
 }
@@ -460,6 +532,22 @@ static u16 ev_rxb(uint8_t rxb)
 	return err_hdlr("_dm9051f rxb error times : %u\r\n", times, 0); //As: Hdlr (times : 1)
 }
 
+static u16 ev_status(uint8_t rx_status)
+{
+	bannerline();
+	printf(".(Err.status%2x) _dm9051f:", rx_status);
+	if (rx_status & RSR_RF) printf(" runt-frame");
+	
+	if (rx_status & RSR_LCS) printf(" late-collision");
+	if (rx_status & RSR_RWTO) printf(" watchdog-timeout");
+	if (rx_status & RSR_PLE) printf(" physical-layer-err");
+	if (rx_status & RSR_AE) printf(" alignment-err");
+	if (rx_status & RSR_CE) printf(" crc-err");
+	if (rx_status & RSR_FOE) printf(" rx-memory-overflow-err");
+	bannerline();
+	return err_hdlr("_dm9051f rx_status error : 0x%02x\r\n", rx_status, 0);
+}
+
 /* if "expression" is true, then execute "handler" expression */
 #define DM9051_RX_RERXB(expression, handler) do { if ((expression)) { \
   handler;}} while(0)
@@ -477,17 +565,6 @@ u8 checksum_re_rxb(u8 rxbyte) {
 
 uint16_t dm9051_rx_dump(uint8_t *buff)
 {
-#if 0
-	//.
-	//. Target dm9051a IS only 8-bit mode (working), TRIED!TRIED!
-	//.
-	int i;
-	for (i = 0; i < 15; i++)
-		dm9051_rx(buff);
-	
-	return dm9051_rx(buff);
-#endif
-	
 #if 1
 	// Because we encounter 16-bit mode fail, so went to try above!
 	// Since target dm9051a IS only 8-bit mode (working)
@@ -510,7 +587,7 @@ uint16_t dm9051_rx_dump(uint8_t *buff)
 	rx_status = ReceiveData[1];
 	rx_len = ReceiveData[2] + (ReceiveData[3] << 8);
 	
-	DM9051_RX_BREAK((rx_status & 0xbf), return err_hdlr("_dm9051f rx_status error : 0x%02x\r\n", rx_status, 0));
+	DM9051_RX_BREAK((rx_status & 0xbf), return ev_status(rx_status)); //_err_hdlr("_dm9051f rx_status error : 0x%02x\r\n", rx_status, 0)
 	DM9051_RX_BREAK((rx_len > RX_POOL_BUFSIZE), return err_hdlr("_dm9051f rx_len error : %u\r\n", rx_len, 0));
 
 	DM9051_Read_Mem(buff, rx_len);
@@ -525,27 +602,31 @@ uint16_t dm9051_rx(uint8_t *buff)
 	u8 ReceiveData[4];
 	u16 rx_len;
 	int ipf = 0, udpf = 0, tcpf = 0;
-	uint16_t bmsr;
 	
+#if 0
 	if (!dm9051_is_flag_set(lw_flag, DM9051_FLAG_LINK_UP)) {
 		if (unlink_count < UNLINK_COUNT_RESET) {
 			unlink_count++;
-			//if (unlink_count < 3U) {
-			//	printf("(dm9051f chklink %d..)\r\n", unlink_count);
-			//}
-		} 
-		//else {
-		//	DM9051_RX_BREAK((unlink_count >= UNLINK_COUNT_RESET), return err_hdlr("_dm9051f rx_link_down count : %u\r\n", unlink_count, 0));
-		//}
-		bmsr = dm9051_bmsr_update(); //phy_read(PHY_STATUS_REG); //re-detect the phy and _set_flags
+			//if (_unlink_count < 3U)
+			//	printf("(dm9051rx chklink %d..)\r\n", _unlink_count);
+		}
 		
-		if (unlink_count > unlink_stamp) {
-			printf("dm9051_rx[%d](detect PHY DOWN, bmsr %04x) stamp counter %u\r\n", mstep_get_net_index(), bmsr, unlink_stamp);
+		if (unlink_count >= unlink_stamp) {
+			
+		 #if 0
+			uint16_t bmsr = dm9051_bmsr_update(); //phy_read(PHY_STATUS_REG); //re-detect the phy and _set_flags
+			printf("dm9051rx dm9051[%d](while bmsr %04x %s) step counter %04u\r\n", 
+				mstep_get_net_index(),
+				bmsr, !dm9051_is_flag_set(lw_flag, DM9051_FLAG_LINK_UP) ? "PHY DOWN" : "PHY UP",
+				unlink_stamp);
+		 #endif
+			
 			unlink_stamp = unlink_count + 1000;
 		}
 		
 		return 0;
 	}
+#endif
 	
 	rxbyte = DM9051_Read_Rxb(); //DM9051_Read_Reg(DM9051_MRCMDX);
 	//DM9051_RXB_Basic(rxbyte); //(todo) Need sevice case.
@@ -554,6 +635,7 @@ uint16_t dm9051_rx(uint8_t *buff)
 	if (check_get() && !check_get_check_done()) { //(checkrxbcount > 1)
 		if (rxbyte & RXB_ERR) { //(checksum_re_rxb(rxbyte) != 0x01 && checksum_re_rxb(rxbyte) != 0)
 				check_decr_to_done();
+				bannerline();
 				printf(".(Err.rxb%2x)", rxbyte);
 				if (check_get_check_done()) {
 					printf("\r\n");
@@ -569,7 +651,7 @@ uint16_t dm9051_rx(uint8_t *buff)
 			  printf(".(rxb%2x)", rxbyte);
 			#endif
 			  if (check_get_check_done()) {
-				printf("\r\n");
+				bannerline();
 				printf("-------------------------- (rxb == 0) ,check_get_check_done() --------------------------\r\n");
 				printf("-------------------------- On ChecksumOffload, DM9051_RX_RERXB will process follow -------------------------\r\n");
 			  }
@@ -577,7 +659,13 @@ uint16_t dm9051_rx(uint8_t *buff)
 			//else
 			
 			if (checksum_re_rxb(rxbyte) == DM9051_PKT_RDY)
-				; //.printf("[rx %d]\r\n", get_testing_rx_count()); //testing_rx_count
+			{
+				//.printf("[rx %d]\r\n", get_testing_rx_count()); //testing_rx_count
+				if (!tp_all_done()) {
+					printf("[rx %d]\r\n", get_testing_rx_count());
+					display_state();
+				}
+			}
 			
 			if (rxbyte != 0x01 && rxbyte != 0) {
 				if (rxbyte == 0x40)
@@ -590,24 +678,30 @@ uint16_t dm9051_rx(uint8_t *buff)
 					if (rxbyte & RCSSR_TCPS) {
 						if (!(rxbyte & RCSSR_TCPP)) {
 							rxbyte &= ~RCSSR_TCPS;
-							printf(".ReceivePacket: rxb=%2x (step1) to %02x\r\n", rxbyte, rxbyte);
+							bannerline();
+							printf("Warn.case.ReceivePacket: rxb=%2x (step1) to %02x, mdra_ingress", rxbyte, rxbyte);
+							rxrp_dump_print_init_show();
+							bannerline();
 						}
 					}
 					#endif
 				}
 								
-				if (dm9051opts_testplanlog()) {
-					if (rxbyte & RCSSR_IPP) {
+				if (get_testplanlog()) { //get_dm9051opts_testplanlog()
+					if ((rxbyte & RCSSR_IPP)) {
 						ipf = 1;
-						printf("DM9RX: found IP, checksum %s\r\n", (rxbyte & RCSSR_IPS) ? "fail" : "ok");
+						if (!tp_all_done())
+							printf("DM9RX: found IP, checksum %s\r\n", (rxbyte & RCSSR_IPS) ? "fail" : "ok");
 					}
-					if (rxbyte & RCSSR_UDPP) {
+					if ((rxbyte & RCSSR_UDPP)) {
 						udpf = 1;
-						printf("DM9RX: found UDP, checksum %s\r\n", (rxbyte & RCSSR_UDPS) ? "fail" : "ok");
+						if (!tp_all_done())
+							printf("DM9RX: found UDP, checksum %s\r\n", (rxbyte & RCSSR_UDPS) ? "fail" : "ok");
 					}
-					if (rxbyte & RCSSR_TCPP) {
+					if ((rxbyte & RCSSR_TCPP)) {
 						tcpf = 1;
-						printf("DM9RX: found TCP, checksum %s\r\n", (rxbyte & RCSSR_TCPS) ? "fail" : "ok");
+						if (!tp_all_done())
+							printf("DM9RX: found TCP, checksum %s\r\n", (rxbyte & RCSSR_TCPS) ? "fail" : "ok");
 					}
 				}
 				rxbyte = checksum_re_rxb(rxbyte);
@@ -643,23 +737,25 @@ if (rx_len != LEN64)
 		ReceiveData[0], ReceiveData[1], ReceiveData[2], ReceiveData[3], rx_len);
 #endif
 	
-	DM9051_RX_BREAK((rx_status & 0xbf), return err_hdlr("_dm9051f rx_status error : 0x%02x\r\n", rx_status, 0));
+	DM9051_RX_BREAK((rx_status & 0xbf), return ev_status(rx_status)); //_err_hdlr("_dm9051f rx_status error : 0x%02x\r\n", rx_status, 0)
 	DM9051_RX_BREAK((rx_len > RX_POOL_BUFSIZE), return err_hdlr("_dm9051f rx_len error : %u\r\n", rx_len, 0));
 
 	DM9051_Read_Mem(buff, rx_len);
 	DM9051_Write_Reg(DM9051_ISR, 0x80);
 
-	if (dm9051opts_testplanlog()) {
-		if (ipf) 
+	if (get_testplanlog()) { //get_dm9051opts_testplanlog()
+		if (ipf && !tp_all_done()) 
 			printf("DM9RX: IP, checksum %02x %02x\r\n", buff[24], buff[25]);
-		if (udpf)
+		if (udpf && !tp_all_done())
 			printf("DM9RX: UDP, checksum %02x %02x\r\n", buff[40], buff[41]);
-		if (tcpf)
+		if (tcpf && !tp_all_done())
 			printf("DM9RX: TCP, checksum %02x %02x\r\n", buff[50], buff[51]); //TBD
 
 		rxbyte_flg = ReceiveData[0] & ~(0x03);
-		printf("DM9RX: drv.rx %02x %02x %02x %02x (len %u), rxb %02x | %x\r\n",
-			ReceiveData[0], ReceiveData[1], ReceiveData[2], ReceiveData[3], rx_len, rxbyte_flg, rxbyte);
+
+		if (!tp_all_done())
+			printf("DM9RX[%d]: drv.rx %02x %02x %02x %02x (len %u), rxb %02x | %x\r\n",
+				mstep_get_net_index(), ReceiveData[0], ReceiveData[1], ReceiveData[2], ReceiveData[3], rx_len, rxbyte_flg, rxbyte);
 	}
 	
 	return rx_len;
@@ -676,22 +772,22 @@ void dm9051_tx(uint8_t *buf, uint16_t len)
 
 uint16_t dm9051_init_setup(const uint8_t *adr)
 {
+	uint16_t id;
 	uint8_t ids[5], id_adv;
-	uint16_t id = read_chip_id();
-	
-	bannerline();
+
   #if 1
-	printf(".test mstep_get_net_index() %d, spiname %s, with %02x%02x%02x%02x%02x%02x\r\n", mstep_get_net_index(), mstep_spi_conf_name(),
-		adr[0], adr[1], adr[2], adr[3], adr[4], adr[5]);
-	printf(": usage with csmode :      %s\r\n", dm9051opts_desccsmode());
-	printf(": usage with ncrmode :     %s\r\n", dm9051opts_descncrmode());
-	printf(": usage with rx's mode :   %s\r\n", dm9051opts_descpromismode());
+	//bannerline();
+	//printf(": usage with csmode :      %s\r\n", dm9051opts_desccsmode());
+	//printf("  ::: usage with ncrmode :     %s\r\n", dm9051opts_descncrmode());
+	//printf("  ::: usage with rx's mode :   %s\r\n", dm9051opts_descpromismode());
   #endif
-	
-	display_verify_chipid("dm9051_init", mstep_spi_conf_name(), id);
+	id = read_chip_id();
 	read_chip_revision(ids, &id_adv);
-	display_ids("dm9051_init", ids);
-	display_ida("dm9051_init", id_adv);
+	
+	display_identity(mstep_spi_conf_name(), id, ids, id_adv);
+	//display_verify_chipid("dm9051_init", mstep_spi_conf_name(), id);
+	//display_ids("dm9051_init", ids);
+	//display_ida("dm9051_init", id_adv);
 	
 	if (!check_chip_id(id))
 		return id;
@@ -714,6 +810,9 @@ void dm9051_start(const uint8_t *adr)
 uint16_t dm9051_init(const uint8_t *adr)
 {
 	uint16_t id;
+	
+	first_log_init();
+
 //#if 0
 //	id = dm9051_init_setup(adr);
 //#else
@@ -758,7 +857,7 @@ static uint16_t link_show(void) {
 	u8 n = 0, i, histnsr[16] = { 0, }, histlnk[16] = { 0, };
 	u8 val;
 	u16 lnk;
-	u16 rwpa_w, mrr_rd;
+	u16 rwpa_w, mdra_ingress;
 
 	//.dm9051_show_id(); //Also [test][test][test].init
 	do {
@@ -772,7 +871,7 @@ static uint16_t link_show(void) {
 	} while(n < 20 && !bityes(histnsr) && !bityes(histlnk)); // 20 times for 2 seconds
 	
 	rwpa_w = (uint32_t)DM9051_Read_Reg(0x24) | (uint32_t)DM9051_Read_Reg(0x25) << 8; //DM9051_RWPAL
-	mrr_rd = (uint32_t)DM9051_Read_Reg(0x74) | (uint32_t)DM9051_Read_Reg(0x75) << 8; //DM9051_MRRL;
+	mdra_ingress = (uint32_t)DM9051_Read_Reg(0x74) | (uint32_t)DM9051_Read_Reg(0x75) << 8; //DM9051_MRRL;
 	
 	printf("(SHW timelink, 20 detects) det %d\r\n", n);
 	
@@ -784,14 +883,14 @@ static uint16_t link_show(void) {
 		printf(" %s%d", (i==0) ? "check .bmsr " : (i==8) ? ".bmsr. " : "", histlnk[i]);
 	
 	printf(" %s (rrp %x rwp %x)\r\n", (bityes(histnsr) || bityes(histlnk)) ? "up" : "down",
-		mrr_rd, rwpa_w);*/
+		mdra_ingress, rwpa_w);*/
 	
 	for (i= 8; i< 16; i++)
 		printf(" %s%d", (i==8) ? ".nsr " : "", histnsr[i]);
 	for (i= 8; i< 16; i++)
 		printf(" %s%d", (i==8) ? ".bmsr. " : "", histlnk[i]);
 	
-	printf(" (rrp %x rwp %x)\r\n", mrr_rd, rwpa_w);
+	printf(" (rrp %x rwp %x)\r\n", mdra_ingress, rwpa_w);
 	
 	return bityes(histnsr) && bityes(histlnk);
 }
@@ -799,6 +898,18 @@ static uint16_t link_show(void) {
 uint16_t dm9051_link_show(void)
 {
 	return link_show();
+}
+
+
+extern char *display_identity_bannerline_title;
+
+int display_identity(char *spiname, uint16_t id, uint8_t *ids, uint8_t id_adv)
+{
+	bannerline();
+	printf("%s[%d] ::: Read ids %02x %02x %02x %02x %02x (%s) chip rev %02x, Chip ID %02x (CS_EACH_MODE)\r\n",
+		display_identity_bannerline_title, mstep_get_net_index(),
+		ids[0], ids[1], ids[2], ids[3], ids[4], dm9051opts_desccsmode(), id_adv, id);
+	return 0;
 }
 
 int display_verify_chipid(char *str, char *spiname, uint16_t id) {

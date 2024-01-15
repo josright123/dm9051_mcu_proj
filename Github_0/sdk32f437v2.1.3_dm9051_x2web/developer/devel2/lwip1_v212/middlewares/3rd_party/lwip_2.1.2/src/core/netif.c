@@ -908,7 +908,12 @@ netif_set_up(struct netif *netif)
 
   LWIP_ERROR("netif_set_up: invalid netif", netif != NULL, return);
 
+//printf("netif->flags & NETIF_FLAG_UP = %d\r\n", netif->flags & NETIF_FLAG_UP);
+//if (!(netif->flags & NETIF_FLAG_UP))
+//	printf("netif->flags & NETIF_FLAG_UP = %d do below:\r\n", netif->flags & NETIF_FLAG_UP);
+	
   if (!(netif->flags & NETIF_FLAG_UP)) {
+//printf("J(LWIP_ETHERNET:%d): inp->flag & CFG_FLGs :netif_set_up.s %x & %x\r\n", LWIP_ETHERNET, netif->flags, (NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET));
     netif_set_flags(netif, NETIF_FLAG_UP);
     MIB2_COPY_SYSUPTIME_TO(&netif->ts);
     NETIF_STATUS_CALLBACK(netif);
@@ -921,7 +926,7 @@ netif_set_up(struct netif *netif)
 #endif
 
     netif_issue_reports(netif, NETIF_REPORT_TYPE_IPV4 | NETIF_REPORT_TYPE_IPV6);
-//printf("J(:%d): inp->flag & CFG_FLGs :netif_set_up.e %x & %x\r\n", LWIP_ETHERNET, netif->flags, (NETIF_FLAG_ETHARP | _NETIF_FLAG_ETHERNET));
+//printf("J(LWIP_ETHERNET:%d): inp->flag & CFG_FLGs :netif_set_up.e %x & %x\r\n", LWIP_ETHERNET, netif->flags, (NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET));
 #if LWIP_IPV6
     nd6_restart_netif(netif);
 #endif /* LWIP_IPV6 */

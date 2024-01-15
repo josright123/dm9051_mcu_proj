@@ -32,11 +32,12 @@
 #ifndef LWIP_HDR_LWIPOPTS_H
 #define LWIP_HDR_LWIPOPTS_H
 
+#define NOT_lwip_init_SYS_TIMEOUTS_INIT()
+#define PUT_proc_runs_init_SYS_TIMEOUTS_INIT()	sys_timeouts_init()
+
 #define LWIP_HTTPD_CUSTOM_FILES       	  0
 #define HTTPD_JJ_DYNAMIC_FSDATA			  1 //1
 #define HTTPD_USE_CUSTOM_FSDATA			  1 //0 //1
-
-//#define LWIP_TESTMODE                   0
 
 #define LWIP_IPV4			1
 
@@ -78,7 +79,10 @@
 #define LWIP_WND_SCALE                   0
 #define TCP_RCV_SCALE                    0
 
-#define LWIP_TESTMODE					 1 //.JJ
+//#define LWIP_TESTMODE                   0
+#define LWIP_TESTMODE					 1 //.JJ in developping, the used code style
+#define LWIP_TESTMODE_REAL				 0 //1 //0 //.JJ must exactly reflect the true function's version.
+
 #define LWIP_DEBUG_TIMERNAMES			 LWIP_DBG_ON //LWIP_DBG_OFF //LWIP_DBG_ON
 /* 'PBUF_POOL_BUFSIZE': the size of each pbuf in the pbuf pool. */
 #define PBUF_POOL_SIZE                   7 //.10 /* pbuf tests need ~200KByte */

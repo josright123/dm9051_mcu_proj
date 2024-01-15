@@ -54,6 +54,17 @@ static void env_ethernetif_update_config_cb(struct netif *netif) //tobe = env_li
   ethernetif_notify_conn_changed(netif);
 }
 
+char *display_identity_bannerline_title;  //= 
+
+static void cleararpflag_netif_set_up(struct netif *netif)
+{
+	u8_t savflg = netif->flags;
+	netif_clear_flags(netif, NETIF_FLAG_ETHARP);
+	netif_set_up(netif);
+
+	netif->flags = savflg;
+}
+
 /**
   * @brief  initializes the lwip stack
   * @param  none
@@ -80,8 +91,10 @@ void tcpip_stack_init(void)
 //  if (netif.link_callback)
 //	printf("[.] _tcpip_stack_init.do : netif.flags = %02x, %s\r\n", netif.flags, (netif.link_callback) ? "yes lnkchg_cb" : "no lnkchg_cb");
 	
-	bannerline();
-	printf(": tcpip_stack_init[%d]\r\n", pin);
+	//bannerline();
+	//printf(": tcpip_stack_init[%d]\r\n", pin); =
+	display_identity_bannerline_title = ": tcpip_stack_init";
+	
   if (1) {
 	  /* 3. stack_start_core()= */
 	  uint8_t *mac_address; //uint8_t mac_address[MAC_ADDR_LENGTH];
@@ -171,7 +184,18 @@ void tcpip_stack_init(void)
 	  netif_set_default(&xnetif[pin]);
 
 	  /*  When the netif is fully configured this function must be called.*/
+#if 1
+	//printf("Note: netif is fully configuration.s\r\n");
+	printf("  [Send ARP events, e.g. on link-up/netif-up or addr-change] but we think, only link-up or addr-chang IS enought!\r\n"); /** Send ARP/IGMP/MLD/RS events, e.g. on link-up/netif-up or addr-change */
+	  
+	  cleararpflag_netif_set_up(&xnetif[pin]); //has temp: xnetif[pin].flags &= ~NETIF_FLAG_ETHARP;
+	  
+	//printf("Note: netif is fully configuration.e\r\n");
+#else
+	printf("netif_set_up(&xnetif[pin]).s\r\n");
 	  netif_set_up(&xnetif[pin]);
+	printf("netif_set_up(&xnetif[pin]).e\r\n");
+#endif 
   }
   
   /* 3. Post */

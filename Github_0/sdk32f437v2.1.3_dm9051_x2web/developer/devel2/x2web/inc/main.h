@@ -99,6 +99,7 @@ void mqtt_client_init_log(void);
 
 void BannerDisplay(void);
 void NetifDisplay(int i);
+void EepromDisplay(int pin);
 void ParamDisplay(void);
 
 //void print_calc_pingreg_watchdog(u16_t keep_alive);
@@ -189,24 +190,42 @@ void debug_dynamic_page(void);
 //		.hdlr_ms =									MQTT_CLIENT_PUBLISH_TMR_MS
 
 #ifdef DEVELOPER_CONF
+#if (ETHERNET_COUNT == 1)
 const handler_info linkhandler_info[ETHERNET_COUNT] = {
 	{
 		LINK_HANDLER_PAIR, //LINK_HANDLER_TYPE,
 		//.hdlr_ms =									MQTT_CLIENT_LINK_TMR_MS, // e.g. 200 / 300 ms
 		//.timer_type =									TYPE_TICKS/TYPE_TIMEROUTS, // project develop configuration.
 	},
-#if (ETHERNET_COUNT >= 2) //.if (BOARD_SPI_COUNT >= 2)
+};
+const handler_info publishhandler_info[ETHERNET_COUNT] = {
 	{
-		MQTT_CLIENT_LINK_TMR_MS, MQTT_CLIENT_LINK_TMR_TYPE,
+		PUBLISH_HANDLER_PAIR, //PUBLISH_HANDLER_TYPE,
 	},
+};
+#elif (ETHERNET_COUNT >= 2)
+const handler_info linkhandler_info[ETHERNET_COUNT] = {
+	{
+		MQTT_CLIENT_LINK_TMR_MS, 
+		MQTT_CLIENT_LINK_TMR_TYPE,
+	},
+	{
+		MQTT_CLIENT_LINK_TMR_MS, 
+		MQTT_CLIENT_LINK_TMR_TYPE,
+	},
+};
+const handler_info publishhandler_info[ETHERNET_COUNT] = {
+	{
+		PUBLISH_HANDLER_PAIR, //PUBLISH_HANDLER_TYPE,
+	},
+	{
+		PUBLISH_HANDLER_PAIR, //PUBLISH_HANDLER_TYPE,
+	},
+};
 #endif
-};
-const handler_info publishhandler_info = {
-	PUBLISH_HANDLER_PAIR, //PUBLISH_HANDLER_TYPE,
-};
 #else //DEVELOPER_CONF
 extern const handler_info linkhandler_info[ETHERNET_COUNT];
-extern const handler_info publishhandler_info;
+extern const handler_info publishhandler_info[ETHERNET_COUNT];
 #endif //DEVELOPER_CONF
 
 //void line7(void);

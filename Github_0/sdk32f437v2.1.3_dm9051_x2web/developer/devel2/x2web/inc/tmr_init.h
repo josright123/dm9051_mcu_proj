@@ -1,1 +1,1 @@
-void at32_dm9051_tmr_init(void);
+void tmr_init(void);

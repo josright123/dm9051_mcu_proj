@@ -344,8 +344,8 @@ static int set_content_length(char *cl_data, int content_length)
 {
 	int tmp_content_length = 0, lc = 0;
 	char *p;
-	printf("set_content_length().s %02x %02x %02x %02x %02x %02x\r\n", 
-		*(cl_data+16), *(cl_data+17), *(cl_data+18), *(cl_data+19), *(cl_data+20), *(cl_data+21));
+	//printf("set_content_length().s %02x %02x %02x %02x %02x %02x\r\n", 
+		//*(cl_data+16), *(cl_data+17), *(cl_data+18), *(cl_data+19), *(cl_data+20), *(cl_data+21));
 	p = cl_data + 16;
 	if (*p >= 0x30 && *p <= 0x39) {
 		tmp_content_length += *p - 0x30;
@@ -356,13 +356,13 @@ static int set_content_length(char *cl_data, int content_length)
 			p++;
 		}
 	}
-	printf("tmp content_length() which was html len %d\r\n", tmp_content_length);
+	//printf("tmp content_length() which was html len %d\r\n", tmp_content_length);
 	lc = set_c_length(lc, cl_data+16, content_length); //recursive-skill usage
 	*(cl_data+16+lc) = 0x0d;
 	*(cl_data+16+lc+1) = 0x0a;
-	printf("set_content_length().e %02x %02x %02x %02x %02x %02x\r\n", 
-		*(cl_data+16), *(cl_data+17), *(cl_data+18), *(cl_data+19), *(cl_data+20), *(cl_data+21));
-	printf("set_content_length() which is html len %d\r\n", content_length);
+	//printf("set_content_length().e %02x %02x %02x %02x %02x %02x\r\n", 
+		//*(cl_data+16), *(cl_data+17), *(cl_data+18), *(cl_data+19), *(cl_data+20), *(cl_data+21));
+	//printf("set_content_length() which is html len %d\r\n", content_length);
 	return 16 + lc + 2;
 }
 
@@ -373,28 +373,28 @@ static int calc_impl_struct_pages(char *data) {
 	int i; //const char *p;
 	uint8_t *dev, *mac;
 
-printf("calc, data__implement_html[] %x (size %d)\r\n", data__implement_html, sizeof(data__implement_html));	
+//printf("calc, data__implement_html[] %x (size %d)\r\n", data__implement_html, sizeof(data__implement_html));	
 	
-printf("calc, len %d filename block.\r\n", IMPL_FILENAME_STRUCT_LEN);
+//printf("calc, len %d filename block.\r\n", IMPL_FILENAME_STRUCT_LEN);
 	n_raw += IMPL_FILENAME_STRUCT_LEN;
 	data_t = data + n_raw;
 	
-printf("calc, len %d HTTP_header.\r\n", sizeof(http_header));
+//printf("calc, len %d HTTP_header.\r\n", sizeof(http_header));
 	n_raw += sizeof(http_header);
 	data_t = data + n_raw;
 	
-printf("calc, len %d Server: lwip/2.1.2.\r\n", sizeof(server_lwip));
+//printf("calc, len %d Server: lwip/2.1.2.\r\n", sizeof(server_lwip));
 	n_raw += sizeof(server_lwip);
 	data_t = data + n_raw;
 	data_s = data_t;
 	
-printf("calc, len %d content-length block.\r\n", 22);
-printf("calc, Display dump len %d (bytes)\r\n", n_raw + 22);
-printf("calc, Display dump %x + %d, %x + %d\r\n", data, n_raw, data_t, 22);
-dm9051_txlog_monitor_tx_all(2, (const uint8_t *)data__implement_html, n_raw + 22);
+//printf("calc, len %d content-length block.\r\n", 22);
+//printf("calc, Display dump len %d (bytes)\r\n", n_raw + 22);
+//printf("calc, Display dump %x + %d, %x + %d\r\n", data, n_raw, data_t, 22);
+//.dm9051_txlog_monitor_tx_all(2, (const uint8_t *)data__implement_html, n_raw + 22);
 
-printf("---------- calc for content-length block %x + %d\r\n", data_s, 22);
-dm9051_txlog_monitor_tx_all(2, (const uint8_t *)data_s, 22);
+//printf("---------- calc for content-length block %x + %d\r\n", data_s, 22);
+//.dm9051_txlog_monitor_tx_all(2, (const uint8_t *)data_s, 22);
 //	ns = set_content_length(data + n_raw, content_length); //we have a recursive-skill usage
 //	n_raw += ns; //'sizeof(content_len)'
 	data_t = data + n_raw;
@@ -412,26 +412,26 @@ dm9051_txlog_monitor_tx_all(2, (const uint8_t *)data_s, 22);
 	}
 	content_length += tns;
 	n_raw += tns;
-printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", tns, content_length, sprnt_max);
+//printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", tns, content_length, sprnt_max);
 	ns = sprintf(sprntbuf, "%s<br>\r\n", get_application_banner());
 	if (ns > sprnt_max) sprnt_max = ns;
 	content_length += ns;
 	n_raw += ns;
-printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_length, sprnt_max);
+//printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_length, sprnt_max);
 	
 	dev = lwip_get_ip_addresse();
 	ns = sprintf(sprntbuf, sssip, dev[0], dev[1], dev[2], dev[3]);
 	if (ns > sprnt_max) sprnt_max = ns;
 	content_length += ns;
 	n_raw += ns;
-printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_length, sprnt_max);
+//printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_length, sprnt_max);
 	
 	mac = lwip_get_mac_addresse1();
 	ns = sprintf(sprntbuf, sssmac, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 	if (ns > sprnt_max) sprnt_max = ns;
 	content_length += ns;
 	n_raw += ns;
-printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_length, sprnt_max);
+//printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_length, sprnt_max);
 	
 	i = tns = 0;
 	while (eeetbl[i]) {
@@ -442,20 +442,20 @@ printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_l
 	}
 	content_length += tns;
 	n_raw += tns;
-printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_length, sprnt_max);
-printf("---------- Sanity CHECK: sprnt_max %d < 100, result: %s\r\n", sprnt_max, sprnt_max < 100 ? "" : "");
+//printf("---------- calc %3d (content_length %d) sprnt_max %d\r\n", ns, content_length, sprnt_max);
+//printf("---------- Sanity CHECK: sprnt_max %d < 100, result: %s\r\n", sprnt_max, sprnt_max < 100 ? "" : "");
 #endif
 	data_t = data + n_raw;
 	
-printf("---------- check raw_page_data s %x (content_length %d)\r\n", data_s, content_length);
+//printf("---------- check raw_page_data s %x (content_length %d)\r\n", data_s, content_length);
 //.function_monitor_tx_all((const uint8_t *)data_s, 32);
 	ns = set_content_length(data_s, content_length); //we have a recursive-skill usage
 	n_raw += ns; //'sizeof(content_len)'
-printf("---------- check raw_page_data e %x (content_length %d)\r\n", data_s, content_length);
+//printf("---------- check raw_page_data e %x (content_length %d)\r\n", data_s, content_length);
 //.function_monitor_tx_all((const uint8_t *)data_s, 32);
 	
-	printf("calc_impl_struct_pages: content len %d, total struct len %d\r\n", content_length, n_raw);
-	printf("\r\n");
+	//printf("calc_impl_struct_pages: content len %d, total struct len %d\r\n", content_length, n_raw);
+	//printf("\r\n");
 	return content_length;
 }
 
@@ -512,12 +512,12 @@ static int setup_impl_pages(char *data, int content_length) {  // make, data__im
 	  }
 	#endif
 	  
-	  printf("[html len checking]: %d vs. %d (%s)\r\n", re_content_length, content_length, (re_content_length == content_length) ? "OK-equal" : "Warn-diff"); //if ()
+	  //printf("[html len checking]: %d vs. %d (%s)\r\n", re_content_length, content_length, (re_content_length == content_length) ? "OK-equal" : "Warn-diff"); //if ()
 	
-	  printf("setup_impl_pages() html len %d, with instruction-head %d, total struct len %d\r\n", content_length, n_raw, n_raw + IMPL_FILENAME_STRUCT_LEN); //rawpage-len rawpage for lwip.
+	  //printf("setup_impl_pages() html len %d, with instruction-head %d, total struct len %d\r\n", content_length, n_raw, n_raw + IMPL_FILENAME_STRUCT_LEN); //rawpage-len rawpage for lwip.
 #endif 
-	  printf("setup_impl_pages() used len %d, useful zoom len %d, total struct len %d\r\n", n_raw + IMPL_FILENAME_STRUCT_LEN,
-			sizeof(data__implement_html), sizeof(data__implement_html));
+	  //printf("setup_impl_pages() used len %d, useful zoom len %d, total struct len %d\r\n", n_raw + IMPL_FILENAME_STRUCT_LEN,
+	  //		sizeof(data__implement_html), sizeof(data__implement_html));
 	return n_raw;
 }
 
@@ -527,15 +527,15 @@ int setup_dynamic_pages1(struct fs_file *file, const char *name) {
 	
 	if (!strcmp(name, (const char *)IMPL_FILENAME)) {
 	
-printf("\r\n");
-printf("calc_\r\n");
+//printf("\r\n");
+//printf("calc_\r\n");
 //.printf("---------- check %x %x %x\r\n", p, p->filename, data__implement_html);
 		content_length = calc_impl_struct_pages((char *)p->filename);
 		
 		file->data = p->filename + sizeof(p->filename);
-printf("setup_\r\n");
+//printf("setup_\r\n");
 //.printf("---------- check %x %x %x, html_data %x\r\n", p, p->filename, data__implement_html, file->data);
-printf("---------- data__implement_html %x, html_data %x\r\n", data__implement_html, file->data);
+//printf("---------- data__implement_html %x, html_data %x\r\n", data__implement_html, file->data);
 		len = setup_impl_pages((char *)file->data, content_length);
 		//file->data = (const char *) p->filename + sizeof(p->filename);
 		

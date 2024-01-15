@@ -27,21 +27,64 @@
 #define __DM9051_ENV_H
 
 #include "dm9051opts.h" //driver attributes
+#include "dm9051spiopts.h"
 
 typedef enum { 
   CS_EACH = 0,
   CS_LONG,
 } csmode_t;
 
-confirm_state dm9051opts_testplanlog(void);
-uint8_t dm9051opts_iomode(void); // Driver's laydr2 control, for multi-spi-cards. depend on your definition of '_BOARD_SPI_COUNT'
-char *dm9051opts_desciomode(void);
-csmode_t dm9051opts_longcsmode(void);
-char *dm9051opts_desccsmode(void);
-uint8_t dm9051opts_ncrmode(void);
-char *dm9051opts_descncrmode(void);
-uint8_t dm9051opts_promismode(void);
-char *dm9051opts_descpromismode(void);
+typedef enum { 
+  NCR_RST_DEFAULT = 0,
+  NCR_FORCE_100MF,
+  NCR_AUTO_NEG,
+} ncrmode_t;
+
+//void set_dm9051opts_testplanlog(confirm_state test_log);
+//confirm_state get_dm9051opts_testplanlog(void);
+
+//uint8_t dm9051opts_iomode(void); // Driver's laydr2 control, for multi-spi-cards. depend on your definition of '_BOARD_SPI_COUNT'
+//char *dm9051opts_desciomode(void);
+
+//csmode_t dm9051opts_csmode(void);
+//char *dm9051opts_desccsmode(void);
+//ncrmode_t dm9051opts_ncrforcemode(void);
+//char *dm9051opts_descncrmode(void);
+
+//uint8_t dm9051opts_promismode(void);
+//char *dm9051opts_descpromismode(void);
+
+//-
+//confirm_state dm9051opts_confirm_staterxmode_checksum_offload(void); //~is_dm9051opts_rxchecksum_offload(void);
+//char *dm9051opts_descrxmode_checksum_offload(void); //~dm9051opts_desc_rxchecksum_offload(void);
+//confirm_state dm9051opts_confirm_stateflowcontrolmode(void);
+//char *dm9051opts_descflowcontrolmode(void);
+
+SG_FUNCTION(confirm_state, test_plan_log);
+
+IS_FUNCTION(uint8_t, iomode);
+IS_FUNCTION(uint8_t, promismode);
+
+IS_FUNCTION(csmode_t, csmode);
+IS_FUNCTION(ncrmode_t, ncrmode);
+
+IS_FUNCTION(confirm_state, flowcontrolmode); //confirm_state
+IS_FUNCTION(confirm_state, rxmode_checksum_offload); //confirm_state
+
+#define get_testplanlog				IS_GET_INSTEAD(confirm_state, test_plan_log)
+#define set_testplanlog				IS_SET_INSTEAD(confirm_state, test_plan_log)
+#define iomode						IS_INSTEAD(uint8_t, iomode)
+#define promismode					IS_INSTEAD(uint8_t, promismode)
+#define csmode						IS_INSTEAD(csmode_t, csmode) //dm9051opts_csmode_tcsmode
+#define ncrmode						IS_INSTEAD(ncrmode_t, ncrmode)
+#define isflowcontrolmode			IS_INSTEAD(confirm_state, flowcontrolmode)
+#define isrxmode_checksum_offload	IS_INSTEAD(confirm_state, rxmode_checksum_offload)
+//#define INSTEAD_IS_FUNCTION(isfunc, rtype, field) \
+//	#define isfunc dm9051opts_##rtype##field
+//INSTEAD_IS_FUNCTION(isflowcontrolmode, confirm_state, flowcontrolmode)
+//INSTEAD_IS_FUNCTION(isrxmode_checksum_offload, confirm_state, rxmode_checksum_offload)
+//#define isflowcontrolmode			dm9051opts_confirm_stateflowcontrolmode
+//#define isrxmode_checksum_offload	dm9051opts_confirm_staterxmode_checksum_offload
 
 //#define dm9051opts_iomode()			dm9051opts[pin_code].iomode
 
@@ -53,7 +96,8 @@ void dm9051_irqlines_proc(void);
 int is_dm9051_board_irq(void);
 
 void cpin_poweron_reset(void);
-void cspi_read_regsS(uint8_t reg, u8 *buf, u16 len);
+//void cspi_read_regsS(uint8_t reg, u8 *buf, u16 len);
+void cspi_read_regs(uint8_t reg, u8 *buf, u16 len, csmode_t csmode);
 uint8_t cspi_read_reg(uint8_t reg);
 void cspi_write_reg(uint8_t reg, uint8_t val);
 uint8_t cspi_read_mem2x(void);
@@ -79,8 +123,10 @@ void mstep_next_net_index(void);
 char *mstep_spi_conf_name(void);
 char *mstep_conf_cpu_spi_ethernet(void);
 char *mstep_conf_type(void);
-int mstep_conf_spi_count(void);
+//int mstep_conf_spi_count(void);
 
 int mstep_dm9051_index(void);
+
+void GpioDisplay(void);
 
 #endif //__DM9051_ENV_H
