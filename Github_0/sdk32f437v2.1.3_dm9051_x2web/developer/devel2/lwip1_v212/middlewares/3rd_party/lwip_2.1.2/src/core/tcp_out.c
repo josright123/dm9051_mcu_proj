@@ -1629,8 +1629,8 @@ else {
   
   err = ip_output_if(seg->p, &pcb->local_ip, &pcb->remote_ip, pcb->ttl,
                      pcb->tos, IP_PROTO_TCP, netif);
-  printf("tcp_output_segments()::ip_output_if(), err = %d\r\n", err);
-  printf("\r\n");
+  //.printf("tcp_output_segments()::ip_output_if(), err = %d\r\n", err);
+  //.printf("\r\n");
   
   NETIF_RESET_HINTS(netif);
 
@@ -1896,8 +1896,8 @@ tcp_output_alloc_header(struct tcp_pcb *pcb, u16_t optlen, u16_t datalen,
   if (p != NULL) {
     /* If we're sending a packet, update the announced right window edge */
     pcb->rcv_ann_right_edge = pcb->rcv_nxt + pcb->rcv_ann_wnd;
-	printf("######### pcb->rcv_ann_right_edge %x = pcb->rcv_nxt %x + pcb->rcv_ann_wnd %u(%x), because tcp_output_alloc_header\r\n",
-	  pcb->rcv_ann_right_edge, pcb->rcv_nxt, pcb->rcv_ann_wnd, pcb->rcv_ann_wnd); //#####
+	//.printf("######### pcb->rcv_ann_right_edge %x = pcb->rcv_nxt %x + pcb->rcv_ann_wnd %u(%x), because tcp_output_alloc_header\r\n",
+	//.  pcb->rcv_ann_right_edge, pcb->rcv_nxt, pcb->rcv_ann_wnd, pcb->rcv_ann_wnd); //#####
   }
   return p;
 }

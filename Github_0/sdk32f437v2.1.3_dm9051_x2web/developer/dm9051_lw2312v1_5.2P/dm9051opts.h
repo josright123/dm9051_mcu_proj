@@ -3,6 +3,8 @@
 
 #include "stdint.h"
 #include <string.h>
+#include "lwip/opt.h" //We want some compiler option define, defined in "lwipopts.h" such as 'LWIP_TESTMODE' && 'LWIP_TESTMODE_REAL'
+					//when finish the test-plan version, remove this #include is expected. for a code style independently.
 
 /*
  * at32_cm4_device_support
@@ -21,7 +23,7 @@
  * dm9051_declaration_support
  */
 #define ETHERNET_COUNT_MAX						4 // Correspond to mcu target board's specification
-#define ETHERNET_COUNT							1 //2 //1 //2 //4 //2 //2 //3 //2 //#define get_eth_interfaces() ETH_COUNT
+#define ETHERNET_COUNT							2 //1 //2 //1 //2 //4 //2 //2 //3 //2 //#define get_eth_interfaces() ETH_COUNT
 
 /*
  * Stop if id not corrext!
@@ -111,5 +113,50 @@ typedef enum
 
 #define GPIO_PINSRC_NULL (gpio_pins_source_type) 0
 #define GPIO_MUX_NULL    (gpio_mux_sel_type)	 0
+
+//dm9051opts.c export functions
+void ethcnt_ifdiplay_iomode(void);
+void ethcnt_ifdiplay_chipmac(void);
+void ethcnt_ifdiplay(void);
+void first_log_init(void);
+u8 first_log_get(int i);
+void first_log_clear(int i);
+
+/* extern */
+#define EXTERN_FUNCTION(rtype, field) \
+	rtype dm9051opts_##rtype##field(void); \
+	char *dm9051opts_desc##field(void)
+#define IS_FUNCTION(rtype, field) \
+	EXTERN_FUNCTION(rtype, field)
+
+/* definition for extern short-call-name */
+#define IS_INSTEAD(rtype, field)	dm9051opts_##rtype##field
+
+/* declaration */
+#define DECL_FUNCTION(rtype, field) \
+rtype dm9051opts_##rtype##field(void) { \
+	return dm9051optsex[mstep_get_net_index()].##field; \
+}									\
+char *dm9051opts_desc##field(void) { \
+	return dm9051optsex[mstep_get_net_index()].desc##field##; \
+}
+
+/* sub-extern */
+#define EXTERN_SG_FUNCTION(rtype, field) /* SET and HET */ \
+	rtype dm9051opts_get##rtype##field(void); \
+	void dm9051opts_set##rtype##field(rtype value)
+#define SG_FUNCTION(rtype, field) \
+	EXTERN_SG_FUNCTION(rtype, field)
+/* sub */
+#define DECL_SG_FUNCTION(rtype, field) \
+rtype dm9051opts_get##rtype##field(void) { \
+	return dm9051optsex[mstep_get_net_index()].##field; \
+} \
+void dm9051opts_set##rtype##field(rtype value) { \
+	dm9051optsex[mstep_get_net_index()].##field = value; \
+}
+/* definition for extern short-call-name */
+#define IS_GET_INSTEAD(rtype, field)	dm9051opts_get##rtype##field
+#define IS_SET_INSTEAD(rtype, field)	dm9051opts_set##rtype##field
 
 #endif //__DM9051_OPTS_H

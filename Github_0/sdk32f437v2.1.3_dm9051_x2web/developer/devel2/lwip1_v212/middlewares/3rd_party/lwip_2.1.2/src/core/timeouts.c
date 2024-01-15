@@ -308,6 +308,10 @@ void sys_timeouts_init(void)
   size_t i;
   /* tcp_tmr() at index 0 is started on demand */
   timeouts_init_num_cyclic_timers = 0;
+#if 1
+  printf("\r\n");
+  printf("----- : sys_timeouts_init() firstly initialize %d timers\r\n", LWIP_TCP ? LWIP_ARRAYSIZE(lwip_cyclic_timers) -1 : LWIP_ARRAYSIZE(lwip_cyclic_timers));
+#endif	
   for (i = (LWIP_TCP ? 1 : 0); i < LWIP_ARRAYSIZE(lwip_cyclic_timers); i++) {
     /* we have to cast via size_t to get rid of const warning
       (this is OK as cyclic_timer() casts back to const* */
@@ -318,6 +322,12 @@ void sys_timeouts_init(void)
     sys_timeout(lwip_cyclic_timers[i].interval_ms, lwip_cyclic_timer, LWIP_CONST_CAST(void *, &lwip_cyclic_timers[i]));
    #endif
 	timeouts_init_num_cyclic_timers++;
+#if 1 //[JJ]
+   #if LWIP_DEBUG_TIMERNAMES
+	  printf("----- : %d. new-timeouts %5dms %s\r\n", timeouts_init_num_cyclic_timers, 
+			lwip_cyclic_timers[i].interval_ms, lwip_cyclic_timers[i].handler_name);
+   #endif
+#endif
   }
 }
 

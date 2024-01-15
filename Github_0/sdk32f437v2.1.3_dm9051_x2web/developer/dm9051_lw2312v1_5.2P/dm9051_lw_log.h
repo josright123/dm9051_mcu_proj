@@ -15,12 +15,16 @@ typedef struct {
 
 #define TX_MODLE_DECLARATION \
 const tx_monitor_t tx_modle = { \
-	8, \
+	16, /*10,*/ \
+}; \
+const tx_monitor_t tx_all_modle = { \
+	5, \
 }
+
 
 /* Put here, instead. Instead of "dm9051_lw_log.h", some generic called in the other implementation place.
  */
-void dm9051_log_dump0(char *prefix_str, size_t tlen, const void *buf, size_t len);
+//void dm9051_log_dump0(char *prefix_str, size_t tlen, const void *buf, size_t len);
 void dm9051_txlog_monitor_tx(int hdspc, const uint8_t *buffer, size_t len);
 void dm9051_rxlog_monitor_rx(int hdspc, const uint8_t *buffer, size_t len);
 void dm9051_txlog_monitor_tx_all(int hdspc, const uint8_t *buffer, size_t len);

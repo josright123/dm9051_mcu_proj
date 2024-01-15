@@ -375,6 +375,6 @@ lwip_init(void)
 #endif
 
 #if LWIP_TIMERS
-  sys_timeouts_init();
+  NOT_lwip_init_SYS_TIMEOUTS_INIT(); //sys_timeouts_init();
 #endif /* LWIP_TIMERS */
 }

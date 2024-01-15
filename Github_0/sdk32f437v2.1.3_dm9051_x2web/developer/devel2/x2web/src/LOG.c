@@ -22,22 +22,17 @@
 #include "lwip/pbuf.h"
 #include "netif/ppp/ppp_opts.h"
 
-#include "netconf.h"
 #include "dm9051_lw.h"
+#include "dm9051_lw_conf.h"
 #include "developer_conf.h" //#include "main.h" //#include "developer_conf.h"
+#include "netconf.h"
 #include <string.h>
 
 void mqtt_client_init_log(void)
 {
   BannerDisplay(); // [log]
-	
-  do {
-	  int i;
-	  for (i = 0; i< ETHERNET_COUNT; i++)
-	    NetifDisplay(i);
-	  //NetifDisplay(0); // [log]
-	  //NetifDisplay(1); // [log]
-  } while(0);
+
+  ethcnt_ifdiplay();
 	
   //ParamDisplay(); // [log]
   printf("\r\n");
@@ -46,6 +41,7 @@ void mqtt_client_init_log(void)
 void BannerDisplay(void)
 {
   printf("\r\n");
+#if 0
   printf("@example                %s %s\r\n", get_application_name(), get_application_date());
   printf("@version                %s\r\n", get_application_banner());
   //;printf("@date                   %s\r\n", get_application_date());
@@ -54,11 +50,14 @@ void BannerDisplay(void)
   //.printf("@user_password          %s\r\n", USER_PASSWORD ? USER_PASSWORD : "NULL");
 
 //linkhandler_info
-  mstep_set_net_index(0);
-  printf("@link_handler_info[0]   %s\r\n", (linkhandler_type() == TYPE_TIMEROUTS) ? "link_model_timeouts" : "link_model_ticks");
-  mstep_set_net_index(1);
-  printf("@link_handler_info[1]   %s\r\n", (linkhandler_type() == TYPE_TIMEROUTS) ? "link_model_timeouts" : "link_model_ticks");
-	
+  do {
+	int i;
+	for (i = 0; i< ETHERNET_COUNT; i++) {
+		mstep_set_net_index(i);
+		printf("@link_handler_info[%d]   %s\r\n",
+			i, (linkhandler_type() == TYPE_TIMEROUTS) ? "link_model_timeouts" : "link_model_ticks");
+	}
+  } while(0);
   //.printf("@publish_handler        %s\r\n", (get_publishhandler_type() == TYPE_TIMEROUTS) ? "publish_model_timeouts" : "publish_model_ticks");
   //.printf("@quick_publish_func     %d\r\n", MQTT_CLIENT_CONNECT_QUICK_PUBLISHS);
 #if 1
@@ -82,6 +81,7 @@ void BannerDisplay(void)
   printf("@xnetif[0].mtu           %d\r\n", xnetif[0].mtu);
   printf("@xnetif[1].mtu           %d\r\n", xnetif[1].mtu);
   printf("@PBUF_POOL_BUFSIZE       %d\r\n", PBUF_POOL_BUFSIZE);
+#endif
 #endif
 }
 
@@ -111,27 +111,37 @@ void NetifDisplay(int i)
 							      ip4_addr3_16(netif_ip4_gw(&xnetif[0])), 
 							      ip4_addr4_16(netif_ip4_gw(&xnetif[0])));*/
 								  
-  printf("mac:                    %02x:%02x:%02x:%02x:%02x:%02x\r\n", 
+ #if 0
+  printf("mac[%d]:                %02x:%02x:%02x:%02x:%02x:%02x\r\n", i,
 							      mac[0], mac[1],
 							      mac[2], mac[3],
 							      mac[4], mac[5]);
-  printf("ip:                     %"U16_F".%"U16_F".%"U16_F".%"U16_F"\r\n", 
+  printf("ip[%d]:                 %"U16_F".%"U16_F".%"U16_F".%"U16_F"\r\n", i,
 							      ip4_addr1_16(netif_ip4_addr(&xnetif[i])), 
 							      ip4_addr2_16(netif_ip4_addr(&xnetif[i])),
 							      ip4_addr3_16(netif_ip4_addr(&xnetif[i])), 
 							      ip4_addr4_16(netif_ip4_addr(&xnetif[i])));
- #if 0
-  printf("msk:                    %"U16_F".%"U16_F".%"U16_F".%"U16_F"\r\n", 
+  printf("msk[%d]:                %"U16_F".%"U16_F".%"U16_F".%"U16_F"\r\n", i,
 							      ip4_addr1_16(netif_ip4_netmask(&xnetif[i])), 
 							      ip4_addr2_16(netif_ip4_netmask(&xnetif[i])),
 							      ip4_addr3_16(netif_ip4_netmask(&xnetif[i])), 
 							      ip4_addr4_16(netif_ip4_netmask(&xnetif[i])));
-  printf("gw:                     %"U16_F".%"U16_F".%"U16_F".%"U16_F"\r\n", 
+  printf("gw[%d]:                 %"U16_F".%"U16_F".%"U16_F".%"U16_F"\r\n", i,
 							      ip4_addr1_16(netif_ip4_gw(&xnetif[i])), 
 							      ip4_addr2_16(netif_ip4_gw(&xnetif[i])),
 							      ip4_addr3_16(netif_ip4_gw(&xnetif[i])), 
 							      ip4_addr4_16(netif_ip4_gw(&xnetif[i])));
  #endif
+}
+
+void EepromDisplay(int pin)
+{
+	int i;
+	for (i = 0; i < 9; i++) {
+		uint16_t value;
+		value = eeprom_read(i);
+		printf("--EEPROM[%d] word %d %04x\r\n", pin, i, value);
+	}
 }
 
 #if 0

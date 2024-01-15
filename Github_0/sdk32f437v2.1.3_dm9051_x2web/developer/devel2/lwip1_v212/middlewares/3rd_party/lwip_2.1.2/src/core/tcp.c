@@ -969,8 +969,8 @@ printf("get-fail1 @@@@@@@@@@@@@@@@@ wnd_inflation = tcp_update_rcv_ann_wnd(pcb)=
 #endif
       pcb->rcv_ann_wnd = (tcpwnd_size_t)new_rcv_ann_wnd;
 	  // "pcb->rcv_ann_wnd = %u ", pcb->rcv_ann_wnd, 
-printf("get-fail2 @@@@@@@@@@@@@@@@@ wnd_inflation = tcp_update_rcv_ann_wnd(pcb)= %u af-func need_GE TCP_WND_UPDATE_THRESHOLD %d\r\n", 
-	   0, TCP_WND_UPDATE_THRESHOLD);
+//printf("get-fail2 @@@@@@@@@@@@@@@@@ wnd_inflation = tcp_update_rcv_ann_wnd(pcb)= %u af-func need_GE TCP_WND_UPDATE_THRESHOLD %d\r\n", 
+//	   0, TCP_WND_UPDATE_THRESHOLD);
     }
     return 0;
   }
@@ -1000,23 +1000,23 @@ tcp_recved(struct tcp_pcb *pcb, u16_t len)
               pcb->state != LISTEN);
 
   rcv_wnd = (tcpwnd_size_t)(pcb->rcv_wnd + len);
-printf("tcp_recved() rcv_wnd %u = (pcb->rcv_wnd %u + len %u)\r\n", rcv_wnd, pcb->rcv_wnd, len);
+//printf("tcp_recved() rcv_wnd %u = (pcb->rcv_wnd %u + len %u)\r\n", rcv_wnd, pcb->rcv_wnd, len);
   if ((rcv_wnd > TCP_WND_MAX(pcb)) || (rcv_wnd < pcb->rcv_wnd)) {
     /* window got too big or tcpwnd_size_t overflow */
     LWIP_DEBUGF(TCP_DEBUG, ("tcp_recved: window got too big or tcpwnd_size_t overflow\n"));
     pcb->rcv_wnd = TCP_WND_MAX(pcb);
-printf("tcp_recved() rcv_wnd %u = TCP_WND_MAX(pcb) %u\r\n", pcb->rcv_wnd, TCP_WND_MAX(pcb));
+//printf("tcp_recved() rcv_wnd %u = TCP_WND_MAX(pcb) %u\r\n", pcb->rcv_wnd, TCP_WND_MAX(pcb));
   } else  {
     pcb->rcv_wnd = rcv_wnd;
-printf("tcp_recved() pcb->rcv_wnd %u = rcv_wnd %u\r\n", pcb->rcv_wnd, rcv_wnd);
+//printf("tcp_recved() pcb->rcv_wnd %u = rcv_wnd %u\r\n", pcb->rcv_wnd, rcv_wnd);
   }
 
-printf("tcp_recved() len %u\r\n", len);
-printf("tcp_recved() @@@@@@@@@@@@@@@@@ " 
-		   "If has data in the segment, we prepare to pass this up to the application.\r\n");
+//printf("tcp_recved() len %u\r\n", len);
+//printf("tcp_recved() @@@@@@@@@@@@@@@@@ " 
+//		   "If has data in the segment, we prepare to pass this up to the application.\r\n");
   wnd_inflation = tcp_update_rcv_ann_wnd(pcb);
   
-printf("tcp_recved() @@@@@@@@@@@@@@@@@ wnd_inflation = tcp_update_rcv_ann_wnd(pcb)= %u vs TCP_WND_UPDATE_THRESHOLD %d\r\n", wnd_inflation, TCP_WND_UPDATE_THRESHOLD);
+//printf("tcp_recved() @@@@@@@@@@@@@@@@@ wnd_inflation = tcp_update_rcv_ann_wnd(pcb)= %u vs TCP_WND_UPDATE_THRESHOLD %d\r\n", wnd_inflation, TCP_WND_UPDATE_THRESHOLD);
 
   /* If the change in the right edge of window is significant (default
    * watermark is TCP_WND/4), then send an explicit update now.

@@ -41,7 +41,7 @@
 #include "lwip/dhcp.h"
 #include "lwip/init.h"
 #include "ethernetif.h"
-#include "dm9051_lw_conf.h"
+//#include "_dm9051_lw_conf.h"
 
 extern struct netif xnetif[ETHERNET_COUNT];
 extern int n_verify_id;
@@ -56,6 +56,8 @@ typedef void (*net_link_cb_t)(net_t *net, void *arg, u8_t status);
 
 struct net_s
 {
+  /** from 'net_' bind to 'ethernetif_' to 'ETHERNET_COUNT_' */
+  int netif_pin_code;
   /** link state */
   u8_t link_state;
   /** net callback */
@@ -74,9 +76,13 @@ void lwip_periodic_handle(void);
 void publish_handle1(void); //void publish_handle(void);
 
 //#if LINK_DETECTION_NET
-void netlink_init(void); // (are to phase-in, NOW start API-skelton.)
+void waitdone_set_true(int i);
+void netlink_spring_wait(void);
+void netlink_spring_init(void); // (are to phase-in, NOW start API-skelton.)
+void netlink_reinit(void);
 //#endif
-void linkup_cb(net_t *net, void *arg, u8_t status);
+void linkup_spring_cb(net_t *net, void *arg, u8_t status);
+void linkup_re_cb(net_t *net, void *arg, u8_t status);
 
 //err_t publish_module_init(void);
 void publish_new_task(void *pubdata, void *null_cb, void *arg);
@@ -89,7 +95,7 @@ void publish_end_task(void *pubdata, void *null_cb, void *arg);
 /* A function env_ethernetif_set_link_Timer(void const *argument)
  */
 //void env_ethernetif_set_link_Timer(void const *argument); /* Called by _lwip_periodic_handle() */
-	
+
 #ifdef __cplusplus
 }
 #endif

@@ -19,7 +19,17 @@ err_t ethernetif_inp(struct netif *netif);
 void lwip_set_mac(unsigned char* macadd);
 void lwip_get_mac(uint8_t *adr);
 
-void line7_proc(void);
-void reset_proc(void);
+void ethernetif_line7_proc(void);
+void ethernetif_reset_proc(void);
 
+uint8_t *get_rx_buffer(void);
+uint8_t *get_tx_buffer(void);
+
+typedef enum {
+	OUT_NORMAL = 0,
+	OUT_TEST_UDP = 1,
+	OUT_TEST_TCP = 2
+} outpacket_t;
+
+err_t out_packet(outpacket_t opt, uint8_t *buffer, uint16_t l, const uint8_t *update_buffer, uint16_t upate_l);
 #endif

@@ -41,6 +41,7 @@
 #include "netconf.h"
 //#include "..\..\..\lwip_dm9051_driver2303v3\debug.h" //..#include "FreeRTOS.h" (#include "debug.h")
 #include "testproc/testproc_lw.h"
+#include "tmr_init.h"
 
 //....jkiuiuil.
 
@@ -55,7 +56,7 @@
 //u32_t g_RunTime = 0; //JJ-Comp
 volatile uint32_t all_local_time = 0;
 //mqtt_sending_t mqttpingreq_sending_cyclictmr; //int mqtt_sending flg = 0;
-int timeouts_init_num_cyclic_timers;
+int timeouts_init_num_cyclic_timers = 0; //JJ.
 
 void time_update(void)
 {
@@ -105,12 +106,34 @@ int main(void)
   //int ethernet_count;
   system_clock_config();
   uart_print_init(115200);
+//.test.lw-set
+	
   at32_board_init();
 
+//.bannerline();
+//.printf("[x2web start]\r\n");
+  bannerline();
+  printf("[x2web start: BOARD_SPI COUNT %d]  /  [Operating: ETHERNET COUNT %d]\r\n", BOARD_SPI_COUNT, ETHERNET_COUNT);
+	
   //ethernet_count = 
 	dm9051_board_initialize(); //at32_dm9051_initialize();
+	
+ethcnt_ifdiplay_iomode();
 
   lwip_initialize();
+  tasks_base_init();
+  tmr_init(); //Used for link-down/link-up check, to be the latest-one !!
+
+netlink_spring_wait();
+
+#if LWIP_TESTMODE || LWIP_TESTMODE_REAL
+  proc_testing();
+#endif
+
+  lwip_reinitialize();
+  tasks_mach_reinit(); //net->cbf = cb;
+  lwip_app_init();
+  
   proc_runs();
 }
 

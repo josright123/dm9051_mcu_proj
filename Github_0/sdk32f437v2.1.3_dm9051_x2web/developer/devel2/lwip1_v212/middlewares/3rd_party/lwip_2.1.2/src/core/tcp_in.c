@@ -139,7 +139,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
 
   tcphdr = (struct tcp_hdr *)p->payload;
 	
-printf("S.tcp_input(p) TOT_LEN (p->tot_len)= %u\r\n", p->tot_len);
+//printf("S.tcp_input(p) TOT_LEN (p->tot_len)= %u\r\n", p->tot_len);
 
 #if TCP_INPUT_DEBUG
   tcp_debug_print(tcphdr);
@@ -696,7 +696,7 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
     npcb->rcv_nxt = seqno + 1;
 #if 1 //JJ.SPECIAL-CHECK 20230928
     npcb->rcv_ann_right_edge = npcb->rcv_nxt;
-	printf("######### npcb->rcv_ann_right_edge= npcb->rcv_nxt= %x, because tcp_listen_input\r\n", npcb->rcv_nxt);
+	//printf("######### npcb->rcv_ann_right_edge= npcb->rcv_nxt= %x, because tcp_listen_input\r\n", npcb->rcv_nxt);
 #endif
     iss = tcp_next_iss(npcb);
     npcb->snd_wl2 = iss;
@@ -960,7 +960,7 @@ tcp_process(struct tcp_pcb *pcb)
 #endif
             tcp_backlog_accepted(pcb);
             /* Call the accept function. */
-		printf("tcp_in.c [Call the accept function.]\r\n");
+		//.printf("tcp_in.c [Call the accept function.]\r\n");
             TCP_EVENT_ACCEPT(pcb->listener, pcb, pcb->callback_arg, ERR_OK, err);
           }
           if (err != ERR_OK) {

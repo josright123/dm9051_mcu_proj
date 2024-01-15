@@ -166,16 +166,17 @@
 #define FCTR_DEAFULT		(0x38)
 #define FCR_DEFAULT			(0xFF)
 #define FCR_DEFAULT1		(0x39)
+#define FCR_DEFAULT_CONF	FCR_DEFAULT
 #define SMCR_DEFAULT		(0x0)
 #define PBCR_MAXDRIVE		(0x44)
 
 /* 0x31 */
-//#define DM9051_CSCR         (0x31)    /* check sum control register                                         */
+//#define _DM9051_CSCR      (0x31)    /* check sum control register                                         */
 #define TCSCR_UDPCS_ENABLE	(1 << 2)
 #define TCSCR_TCPCS_ENABLE	(1 << 1)
 #define TCSCR_IPCS_ENABLE	(1 << 0)
 /* 0x32 */
-//#define DM9051_RCSSR        (0x32)    /* receive check sum status register                                  */
+//#define _DM9051_RCSSR     (0x32)    /* receive check sum status register                                  */
 #define RCSSR_UDPS			(1 << 7)
 #define RCSSR_TCPS			(1 << 6)
 #define RCSSR_IPS			(1 << 5)
@@ -218,6 +219,8 @@
 //uint16_t phy_read(uint16_t uReg);
 //void phy_write(uint16_t reg, uint16_t value); //[function "phy_write" was available but could never referenced.]
 
+uint16_t eeprom_read(uint16_t uReg);
+
 uint16_t phy_read(uint16_t uReg);
 void phy_write(uint16_t reg, uint16_t value);
 
@@ -249,6 +252,7 @@ uint16_t dm9051_link_show(void);
 															fstr, ids[0], ids[1], ids[2], ids[3], ids[4], dm9051opts_desccsmode())
 #define display_ida(fstr, id_adv)					printf("...%s...          chip rev: %02x\r\n", fstr, id_adv)
 
+int display_identity(char *spiname, uint16_t id, uint8_t *ids, uint8_t id_adv);
 int display_verify_chipid(char *str, char *spiname, uint16_t id);
 
 /*

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include "lwip/err.h"
 
+#define bannerline()   printf("\r\n")
+
 #ifndef DM9051_DIAG
 #define DM9051_DIAG(x) do {printf x;} while(0)
 //#include <stdio.h>
@@ -46,14 +48,15 @@ extern int test_line7_enter_check_setup; //.
 //  NET_LINK_DOWN,
 //  NET_LINK_UP
 //};
-void netlink_init(void);
 	
 //for 'main'
 
 #define MQTT_CLIENT_LINK_TMR_MS						200
 
+/*void _netlink_spring_init(void);
+*/
 /** Function prototype for ... Register such a function
- * using netlink_init().
+ * using _netlink_spring_init().
  *
  * @param net, argument to pass to the function - operation call by phy_link_timer()
  */
@@ -69,11 +72,20 @@ struct net_s
   net_link_cb_t cbf; //=net_cb;
 };*/
 
+void tasks_base_init(void);
+void tasks_mach_reinit(void);
+
+void proc_test_plan(void);
+void proc_test_plan_done(void);
+void proc_testing(void);
+
+void lwip_app_init(void);
 void proc_runs(void);
 
 void testproc_board_initialize(void);
 uint16_t testproc_drv_initialize(void);
-void linkup_cb(net_t *net, void *arg, uint8_t status);
+//void _linkup_cb(net_t *net, void *arg, uint8_t status);
+//void _linkup_cb(net_t *net, void *arg, uint8_t status);
 int in_time_link_up_found(void);
 void testproc_run(void);
 void testproc_runs(void);
@@ -104,10 +116,24 @@ void linkchangeup_sending(void);
 //util
 //.void bannerline(void);
 int get_testing_rx_count(void);
-void moni_show_rxwp(void);
+//void _show_rxwp(void); //from 'moni_show_rxwp'
+void rxrp_dump_print_init_show(void);
 void moni_show_rxrp(void);
+void txlen_show_rxwp(uint16_t len);
 
 void check_from_to(int c);
 void check_to(void);
 
-#define bannerline()			printf("\r\n")
+int tp_all_done(void);
+void tp_rotate_state(void);
+void tpp_set_linkup_stage(void);
+int tpp_get_link_state(void);
+
+void tpp_set_linkdown_stage(void);
+int tpp_recognized_stage(void);
+
+void tpp_refine_linkup_progress(void);
+void tpp_refine_linkdown_progress(void);
+void display_state(void);
+
+uint8_t  flow_control_test_config_init(void);

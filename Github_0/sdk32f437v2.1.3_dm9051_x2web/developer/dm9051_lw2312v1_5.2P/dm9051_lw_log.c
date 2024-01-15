@@ -17,6 +17,9 @@ TX_MODLE_DECLARATION;
 tx_monitor_t tx_modle_keep = {
 	0,
 };
+tx_monitor_t tx_all_modle_keep = {
+	0,
+};
 
 static const struct uip_eth_addr log_ethbroadcast = {{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}};
 #define	IsBroadcast(add)	(memcmp(add, log_ethbroadcast.addr, sizeof(struct uip_eth_addr))==0)
@@ -105,7 +108,7 @@ static void arp_tx(const uint8_t *buf, size_t len, int fullcheck)
 	//if (cb.tmp.flg_wait_uni_arp_finish == 0) {
 		if (!IsBroadcast(buf)) {
 			/* [unicast-] */
-			printf("arp_unicast_safty_tx [CAS3 ]\r\n");
+			printf("  Below is arp_unicast_safty_tx [CASE3 ]\r\n");
 			//cb.arp_uni_out_tx.val++;
 			//if (cb.arp_uni_out_tx.enable) {
 				//cb.tmp.arp_we_trans_count++; //inc 1
@@ -125,7 +128,7 @@ static void arp_tx(const uint8_t *buf, size_t len, int fullcheck)
 			//}
 		} else {
 			/* [partial-display-] */
-			printf("arp_counting_to_safty_tx [CAS1 ]\r\n");
+			printf("  arp_counting_to_safty_tx [CAS1 ]\r\n");
 			//part of= [Transmiting...2/2]
 			//if (cb.tmp.arp_we_trans_count > 2) //counting reach expire
 				arp_counting_to_safty_tx(0); //counting reach expire, and rst 0
@@ -234,12 +237,18 @@ void sprint_hex_dump0(int head_space, int titledn, char *prefix_str,
 			else {
 				if (cast_lf)
 					printf("\r\n");
+				
 				if (IS_UDP) {
 					//ptr
+					#if 0
 					size_t ulen = tlen; // larger for with 4-bytes CRC
 					ulen = UIP_LLH_LEN;
 					ulen += HTONS(UDPBUF->udplen) - 8;
 					ulen += sizeof(struct uip_udpip_hdr); // correct for without 4-bytes CRC (htons)
+					
+					if (cast_lf)
+						printf("\r\n");
+				
 					printf(" ..SrcIP %d.%d.%d.%d", (IPBUF->srcipaddr[0] >> 0) & 0xff, (IPBUF->srcipaddr[0] >> 8),
 						(IPBUF->srcipaddr[1] >> 0) & 0xff, (IPBUF->srcipaddr[1] >> 8));
 					printf("  DestIP %d.%d.%d.%d", (IPBUF->destipaddr[0] >> 0) & 0xff, (IPBUF->destipaddr[0] >> 8),
@@ -247,8 +256,10 @@ void sprint_hex_dump0(int head_space, int titledn, char *prefix_str,
 					printf("  Len %d", ulen);
 					printf("  (%5d -> %d Len %d)", UDPBUF->srcport, UDPBUF->destport, HTONS(UDPBUF->udplen) - 8);
 					printf("\r\n");
-				} else
-					printf("\r\n");
+					#endif
+				} 
+				//else
+				//	printf("\r\n");
 			}
 		}
 	//}
@@ -325,7 +336,7 @@ void debug_tx(const uint8_t *buf, uint16_t len)
   if (IS_UDP) {
 	  if (IS_DHCPTX) {
 		printf("---------------Sending DHCP total_tx(%d) Len %u\r\n", count, len);
-		function_monitor_tx_all(HEAD_SPC, buf, len);
+		function_monitor_tx_all(HEAD_SPC, 0, NULL, buf, len);
 	  }
 #if 0
 	  //else {
@@ -339,10 +350,12 @@ void debug_tx(const uint8_t *buf, uint16_t len)
 	  return;
   }
   
+#if 0
   if (len > 70) { //add.
     printf("---------------Sending total_tx(%d)\r\n", count);
-    function_monitor_tx_all(HEAD_SPC, buf, len);
+    function_monitor_tx_all(HEAD_SPC, 0, NULL, buf, len);
   }
+#endif
 }
 
 void debug_rx(const uint8_t *buf, uint16_t len)
@@ -448,12 +461,12 @@ void debug_rx(const uint8_t *buf, uint16_t len)
   function_monitor_rx(HEAD_SPC, buf, len); //(buffer, l);
 }
 
-void dm9051_log_dump0(char *prefix_str, size_t tlen, const void *buf, size_t len)
-{
-	int rowsize = 32;
-	int seg_start = 0;
-	sprint_hex_dump0(HEAD_SPC, 0, prefix_str, tlen, rowsize, buf, seg_start, len, FALSE);
-}
+//void dm9051_log_dump0(char *prefix_str, size_t tlen, const void *buf, size_t len)
+//{
+//	int rowsize = 32;
+//	int seg_start = 0;
+//	sprint_hex_dump0(HEAD_SPC, 0, prefix_str, tlen, rowsize, buf, seg_start, len, FALSE);
+//}
 
 void dm9051_txlog_monitor_tx(int hdspc, const uint8_t *buffer, size_t len)
 {
@@ -461,21 +474,28 @@ void dm9051_txlog_monitor_tx(int hdspc, const uint8_t *buffer, size_t len)
 	//char buff[36]; // note: should be longer enough!
 	//char *heads = buff;
 	if (tx_modle_keep.allow_num < tx_modle.allow_num) {
-		#define HEAD_LEN	MMALLOC_MAX_LEN2 //3KB --> 1kb
-		char *heads;
-		int n;
 		tx_modle_keep.allow_num++;
-
-		heads = (char *) malloc(HEAD_LEN); // note: memory allocation WITH <stdlib.h>!
-		printf("  ### tx [ %lx = malloc( %d )  as a reference for headstr of _txlog_monitor_tx]\r\n",
-			heads, HEAD_LEN);
-		
-		  //=sprintf(heads, "%d/%d tx[%d]>>", tx_modle_keep.allow_num, tx_modle.allow_num, mstep_get_net_index());
-		  n = sprintf(heads, "%d/%d", tx_modle_keep.allow_num, tx_modle.allow_num);
-		  sprintf(heads, "%d/%d tx[%d]>>", tx_modle_keep.allow_num, tx_modle.allow_num, mstep_get_net_index());
-		
-		  function_monitor_tx(hdspc, n, /*NULL*/ heads, buffer, len);
-		free(heads);
+#if LWIP_TESTMODE
+		//......fgn l nre..........
+		if (tx_modle_keep.allow_num == 1 || tx_modle_keep.allow_num == 5 || // because we do checksum offload teat, only meaning with packet1/packet9
+			tx_modle_keep.allow_num == 9 || tx_modle_keep.allow_num == 13)
+#endif
+		do {
+			#define HEAD_LEN	MMALLOC_MAX_LEN2 //3KB --> 1kb
+			char *heads;
+			int n;
+			heads = (char *) malloc(HEAD_LEN); // note: memory allocation WITH <stdlib.h>!
+			#if 1
+			printf("  ### tx [ %lx = malloc( %d )  as a reference for headstr of _txlog_monitor_tx]\r\n",
+				heads, HEAD_LEN);
+			#endif
+			  //=sprintf(heads, "%d/%d tx[%d]>>", tx_modle_keep.allow_num, tx_modle.allow_num, mstep_get_net_index());
+			  n = sprintf(heads, "%d/%d", tx_modle_keep.allow_num, tx_modle.allow_num);
+			  sprintf(heads, "%d/%d tx[%d]>>", tx_modle_keep.allow_num, tx_modle.allow_num, mstep_get_net_index());
+			
+			  function_monitor_tx(hdspc, n, /*NULL*/ heads, buffer, len);
+			free(heads);
+		} while(0);
 	}
 }
 
@@ -486,7 +506,18 @@ void dm9051_rxlog_monitor_rx(int hdspc, const uint8_t *buffer, size_t len)
 
 void dm9051_txlog_monitor_tx_all(int hdspc, const uint8_t *buffer, size_t len)
 {
-	function_monitor_tx_all(hdspc, buffer, len);
+	if (tx_all_modle_keep.allow_num < tx_all_modle.allow_num) {
+		#define HEAD_LEN	MMALLOC_MAX_LEN2 //3KB --> 1kb
+		char *heads;
+		int n;
+		tx_all_modle_keep.allow_num++;
+
+		heads = (char *) malloc(HEAD_LEN); // note: memory allocation WITH <stdlib.h>!
+		  n = sprintf(heads, "%d/%d", tx_all_modle_keep.allow_num, tx_all_modle.allow_num);
+		  sprintf(heads, "%d/%d tx[%d]>>", tx_all_modle_keep.allow_num, tx_all_modle.allow_num, mstep_get_net_index());
+		  function_monitor_tx_all(hdspc, n, heads, buffer, len);
+		free(heads);
+	}
 }
 
 void dm9051_rxlog_monitor_rx_all(int hdspc, const uint8_t *buffer, size_t len)

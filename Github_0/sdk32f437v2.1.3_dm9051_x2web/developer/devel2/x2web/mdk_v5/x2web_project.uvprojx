@@ -390,11 +390,6 @@
               <FilePath>..\src\proc_main.c</FilePath>
             </File>
             <File>
-              <FileName>head.o</FileName>
-              <FileType>3</FileType>
-              <FilePath>..\head.o</FilePath>
-            </File>
-            <File>
               <FileName>netconf - basic.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\netconf - basic.c</FilePath>
@@ -453,6 +448,16 @@
               <FileName>at32f435_437_int.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\at32f435_437_int.c</FilePath>
+            </File>
+            <File>
+              <FileName>netifo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\netifo.c</FilePath>
+            </File>
+            <File>
+              <FileName>head.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\head.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -748,6 +753,11 @@
               <FileName>dm9051_lw_log.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\dm9051_lw2312v1_5.2P\dm9051_lw_log.c</FilePath>
+            </File>
+            <File>
+              <FileName>dm9051opts.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\dm9051_lw2312v1_5.2P\dm9051opts.c</FilePath>
             </File>
           </Files>
         </Group>
