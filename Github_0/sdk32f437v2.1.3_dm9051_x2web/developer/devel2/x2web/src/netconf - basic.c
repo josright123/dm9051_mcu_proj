@@ -130,7 +130,7 @@ void lwip_rx_loop_handler(void)
 static
 void op_link_timer(net_t *net) {
   #define CARRY_NUM 3 //5 //7
-  static int xcarry[ETHERNET_COUNT] = { 0, 0 };
+  static int xcarry[ETHERNET_COUNT] = { 0 };
   static volatile uint8_t first_2rst_timer1500_2cnnt2initpub = 1;
   //.static volatile uint8_t first_timer_coerce2lnk = 1; /* #if 0/#endif, Global assurance */
   int pin;
@@ -142,7 +142,7 @@ void op_link_timer(net_t *net) {
   chip_link_up = bmsr & 0x0004;
 
 do {
-	static int xc[ETHERNET_COUNT] = { 0, 0 };
+	static int xc[ETHERNET_COUNT] = { 0 };
 	
 	//operation_to[pin]
 	

@@ -23,7 +23,7 @@
  * dm9051_declaration_support
  */
 #define ETHERNET_COUNT_MAX						4 // Correspond to mcu target board's specification
-#define ETHERNET_COUNT							2 //1 //2 //1 //2 //4 //2 //2 //3 //2 //#define get_eth_interfaces() ETH_COUNT
+#define ETHERNET_COUNT							1 //1 //2 //1 //2 //4 //2 //2 //3 //2 //#define get_eth_interfaces() ETH_COUNT
 
 /*
  * Stop if id not corrext!

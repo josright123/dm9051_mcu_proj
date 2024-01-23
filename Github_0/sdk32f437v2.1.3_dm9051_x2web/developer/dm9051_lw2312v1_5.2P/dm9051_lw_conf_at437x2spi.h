@@ -42,8 +42,8 @@ const spi_dev_t devconf_XXXXXx2[BOARD_SPI_COUNT] = {
 			{GPIOA, GPIO_PINS_7, CRM_GPIOA_PERIPH_CLOCK, GPIO_MODE_MUX,	  	GPIO_PINS_SOURCE7, GPIO_MUX_5},	/* //IMOSI */ \
 			{GPIOA, GPIO_PINS_15, CRM_GPIOA_PERIPH_CLOCK, GPIO_MODE_OUTPUT,  GPIO_PINSRC_NULL,  GPIO_MUX_NULL}, /* //(PA15) Test-ISP1 OK */ \
 		}
-	devconf_at437_spi4("AT32F437 SPI4 ETHERNET, sck/mi/mo/cs pe2/pe5/pe6/pe4"),
 	devconf_at437_spi2("AT32F437 SPI2 ETHERNET, sck/mi/mo/cs pd1/pc2/pd4/pd0"),
+	devconf_at437_spi4("AT32F437 SPI4 ETHERNET, sck/mi/mo/cs pe2/pe5/pe6/pe4"),
 	devconf_at437_spi2("AT32F437 SPI2 ETHERNET, sck/mi/mo/cs pd1/pc2/pd4/pd0"),
 	devconf_at437_spi1("AT32F437 SPI1 ETHERNET, sck/mi/mo/cs pa5/pa6/pa7/pa15"),
 	#else
