@@ -8,50 +8,40 @@
 #define APPLICATION_LWIP_PRINT_TIMEOUTS				0 //.JJ (combine with "lwipiots.h" 'LWIP_TESTMODE')
 
 /* [Network Config] */
-#define MAC_ADDR_LENGTH                  			(6)
-#define ADDR_LENGTH                      			(4)
+//#define MAC_ADDR_LENGTH                  			(6)
+//#define ADDR_LENGTH                      			(4)
 
 /* MAC_5TH= 37 (0x25)
  * // IP_3RD= 37
  * //#define IP_3RD	IP3RD
  */
-#define IP3RD	37
+//#define IP3RD	37
 
-#define MAC_5TH	IP3RD
+//#define MAC_5TH	IP3RD
 
-//#define DECLARATION_MAC_ADDR \
-//uint8_t mac_addresse[ETHERNET_COUNT][MAC_ADDR_LENGTH] = { \
-//	{0, 0x60, 0x6e, 0x00, 0x01, MAC_5TH}, }
-
-//#define DECLARATION_LOCAL_IPADDR \
-//uint8_t cfg_local_ipe[ETHERNET_COUNT][ADDR_LENGTH]   	= { {192, 168, 6, 6}, };  \
-//uint8_t cfg_local_gwe[ETHERNET_COUNT][ADDR_LENGTH]   	= { {192, 168, 6, 1}, };  \
-//uint8_t cfg_local_maske[ETHERNET_COUNT][ADDR_LENGTH] 	= { {255, 255, 255, 0}, }
-
-#define DECLARATION_MAC_ADDR \
-uint8_t mac_addresse[ETHERNET_COUNT][MAC_ADDR_LENGTH] = { /* [ETHERNET_COUNT] */ \
+/*#define DECLARATION_MAC_ADDR \
+uint8_t mac_addresse[ETHERNET_COUNT][MAC_ADDR_LENGTH] = { \
 	{0, 0x60, 0x6e, 0x00, 0x01, MAC_5TH}, \
 }
 
 #define DECLARATION_LOCAL_IPADDR \
 uint8_t cfg_local_ipe[ETHERNET_COUNT][ADDR_LENGTH]   	= { \
-	{192, 168, 6, 6}, \
+	{192, 168, 6, 17}, \
 };  \
 uint8_t cfg_local_gwe[ETHERNET_COUNT][ADDR_LENGTH]   	= { \
 	{192, 168, 6, 1}, \
 };  \
 uint8_t cfg_local_maske[ETHERNET_COUNT][ADDR_LENGTH] 	= { \
 	{255, 255, 255, 0}, \
-}
+}*/
 
-//#if (ETHERNET_COUNT >= 2)
-//#endif
+/*
 #if (ETHERNET_COUNT >= 2)
 #undef DECLARATION_MAC_ADDR
 #undef DECLARATION_LOCAL_IPADDR
 
 #define DECLARATION_MAC_ADDR \
-uint8_t mac_addresse[ETHERNET_COUNT][MAC_ADDR_LENGTH] = { /* [ETHERNET_COUNT] */ \
+uint8_t mac_addresse[ETHERNET_COUNT][MAC_ADDR_LENGTH] = { \
 	{0, 0x60, 0x6e, 0x00, 0x01, MAC_5TH+1}, \
 	{0, 0x60, 0x6e, 0x00, 0x01, MAC_5TH}, \
 }
@@ -70,6 +60,7 @@ uint8_t cfg_local_maske[ETHERNET_COUNT][ADDR_LENGTH] 	= { \
 	{255, 255, 255, 0}, \
 }
 #endif
+*/
 
 /* [Network Config.broker.ip] */
 #define DECLARATION_BROKER_IPADDR  					"192.168.1.187"

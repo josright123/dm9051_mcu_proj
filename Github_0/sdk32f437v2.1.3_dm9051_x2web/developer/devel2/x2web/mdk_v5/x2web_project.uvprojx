@@ -335,7 +335,7 @@
               <MiscControls></MiscControls>
               <Define>AT32F437ZMT7,USE_STDPERIPH_DRIVER,AT_START_F437_V1</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\..\libraries\drivers\inc;..\..\..\..\libraries\cmsis\cm4\core_support;..\..\..\..\libraries\cmsis\cm4\device_support;..\inc;..\..\..\..\at32f435_437_board;..\..\middlewares\3rd_party\lwip_2.1.2\port\arch;..\..\middlewares\3rd_party\lwip_2.1.2\src\include\lwip;..\..\middlewares\3rd_party\lwip_2.1.2\src\apps\ping;..\..\lwip1_v212\middlewares\3rd_party\lwip_2.1.2\src\include;..\..\..\dm9051_lw2312v1_5.2P;..\..\lwip1_v212;..\..\lwip1_v212\port_ethernetif2311v1\Standalone;..\..\lwip1_v212\middlewares\3rd_party\lwip_2.1.2\src\apps\http;..\src</IncludePath>
+              <IncludePath>..\..\..\..\libraries\drivers\inc;..\..\..\..\libraries\cmsis\cm4\core_support;..\..\..\..\libraries\cmsis\cm4\device_support;..\inc;..\..\..\..\at32f435_437_board;..\..\middlewares\3rd_party\lwip_2.1.2\port\arch;..\..\middlewares\3rd_party\lwip_2.1.2\src\include\lwip;..\..\middlewares\3rd_party\lwip_2.1.2\src\apps\ping;..\..\lwip1_v212\middlewares\3rd_party\lwip_2.1.2\src\include;..\..\..\dm9051_lw;..\..\lwip1_v212;..\..\lwip1_v212\port_ethernetif2311v1\Standalone;..\..\lwip1_v212\middlewares\3rd_party\lwip_2.1.2\src\apps\http;..\src</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -393,6 +393,11 @@
               <FileName>netconf - basic.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\netconf - basic.c</FilePath>
+            </File>
+            <File>
+              <FileName>netconf_b.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\netconf_b.c</FilePath>
             </File>
             <File>
               <FileName>developer_conf.c</FileName>
@@ -734,30 +739,35 @@
               <FileType>5</FileType>
               <FilePath>..\readme.txt</FilePath>
             </File>
+            <File>
+              <FileName>info.txt</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\dm9051_lw\info.txt</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
           <GroupName>dm9051_lw</GroupName>
           <Files>
             <File>
-              <FileName>dm9051_lw.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\dm9051_lw2312v1_5.2P\dm9051_lw.c</FilePath>
-            </File>
-            <File>
               <FileName>dm9051_lw_conf.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\dm9051_lw2312v1_5.2P\dm9051_lw_conf.c</FilePath>
+              <FilePath>..\..\..\dm9051_lw\dm9051_lw_conf.c</FilePath>
+            </File>
+            <File>
+              <FileName>dm9051_lw.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\dm9051_lw\dm9051_lw.c</FilePath>
             </File>
             <File>
               <FileName>dm9051_lw_log.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\dm9051_lw2312v1_5.2P\dm9051_lw_log.c</FilePath>
+              <FilePath>..\..\..\dm9051_lw\dm9051_lw_log.c</FilePath>
             </File>
             <File>
               <FileName>dm9051opts.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\dm9051_lw2312v1_5.2P\dm9051opts.c</FilePath>
+              <FilePath>..\..\..\dm9051_lw\dm9051opts.c</FilePath>
             </File>
           </Files>
         </Group>

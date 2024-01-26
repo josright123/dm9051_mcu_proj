@@ -15,6 +15,10 @@
 #define DM9051_RX_DBGMSG(expression, message) do { if ((expression)) { \
   DM9051_DIAG(message);}} while(0)
 
+#define flush_path() \
+		  dump_rx_hdlr(); \
+		  threads_support()
+  
 #define flush_while_forever()	\
   do { \
 	  /*FILE __stdout;*/ \
@@ -22,8 +26,7 @@
 	  /*fflush(NULL);*/ /*fflush(__stdout);*/ /*fflush(NULL);*/ /*flush();*/ \
 	  while(1) { \
 		  /*delay_ms(1);*/ \
-		  dump_rx_hdlr(); \
-		  threads_support(); \
+		  flush_path(); \
 	  } \
   } while(0)
 
@@ -75,8 +78,11 @@ struct net_s
 void tasks_base_init(void);
 void tasks_mach_reinit(void);
 
+void testmode_real(void);
+void testing_loop(void);
 void proc_test_plan(void);
-void proc_test_plan_done(void);
+void proc_test_plan_alldone(void);
+void proc_alldone_reset(void);
 void proc_testing(void);
 
 void lwip_app_init(void);
@@ -99,32 +105,36 @@ void linkchangeup_sending(void);
 //.err_t lwip_rx_hdlr(void);
 
 //for 'logic apply'
-//.void check_set_new(void); //logic applied start. 
 
+#if 0
 //.int check_get(void);
-//.void check_decr_to_done(void);
-
-//.void check_set_done(void);
 //.int check_get_check_done(void);
-
+//.void check_decr_to_done(void);
+//.void check_set_done(void);
+//.void check_set_new(void); //logic applied start. 
 #define check_get()				1
 #define check_get_check_done()	0
 #define	check_decr_to_done()
 #define	check_set_done()
 #define	check_set_new()
+#endif
+
+#if 0
+//int get_testing_rx_count(void);
+//void rxrp_dump_print_init_show(void);
+//int tp_all_done(void);
+//void display_state(void);
+#endif
 
 //util
 //.void bannerline(void);
-int get_testing_rx_count(void);
 //void _show_rxwp(void); //from 'moni_show_rxwp'
-void rxrp_dump_print_init_show(void);
 void moni_show_rxrp(void);
 void txlen_show_rxwp(uint16_t len);
 
 void check_from_to(int c);
 void check_to(void);
 
-int tp_all_done(void);
 void tp_rotate_state(void);
 void tpp_set_linkup_stage(void);
 int tpp_get_link_state(void);
@@ -134,6 +144,5 @@ int tpp_recognized_stage(void);
 
 void tpp_refine_linkup_progress(void);
 void tpp_refine_linkdown_progress(void);
-void display_state(void);
 
 uint8_t  flow_control_test_config_init(void);

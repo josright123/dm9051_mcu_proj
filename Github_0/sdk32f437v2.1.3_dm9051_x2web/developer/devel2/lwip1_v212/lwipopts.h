@@ -81,7 +81,10 @@
 
 //#define LWIP_TESTMODE                   0
 #define LWIP_TESTMODE					 1 //.JJ in developping, the used code style
-#define LWIP_TESTMODE_REAL				 0 //1 //0 //.JJ must exactly reflect the true function's version.
+#define LWIP_TESTMODE_REAL				 0 
+											//if, Davicom (can RST such way!)
+											//else, _CH390 (can not as RST above way!)
+											//1 //0 //.JJ must exactly reflect the true function's version.
 
 #define LWIP_DEBUG_TIMERNAMES			 LWIP_DBG_ON //LWIP_DBG_OFF //LWIP_DBG_ON
 /* 'PBUF_POOL_BUFSIZE': the size of each pbuf in the pbuf pool. */

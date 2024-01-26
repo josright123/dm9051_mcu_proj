@@ -66,18 +66,7 @@ extern const struct memp_desc* const memp_pools[MEMP_MAX];
  */
 #define LWIP_MEMPOOL_PROTOTYPE(name) extern const struct memp_desc memp_ ## name
 
-#if MEMP_MEM_MALLOC
-
-#define LWIP_MEMPOOL_DECLARE(name,num,size,desc) \
-  LWIP_MEMPOOL_DECLARE_STATS_INSTANCE(memp_stats_ ## name) \
-  const struct memp_desc memp_ ## name = { \
-    DECLARE_LWIP_MEMPOOL_DESC(desc) \
-    LWIP_MEMPOOL_DECLARE_STATS_REFERENCE(memp_stats_ ## name) \
-    LWIP_MEM_ALIGN_SIZE(size) \
-  };
-
-#else /* MEMP_MEM_MALLOC */
-
+#if MEMP_MEM_MALLOC == 0
 /**
  * @ingroup mempool
  * Declare a private memory pool

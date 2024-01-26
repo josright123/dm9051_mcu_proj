@@ -59,6 +59,9 @@
 
 #include <string.h>
 
+//#include "dm9051_lw.h"
+#include "dm9051_lw_conf.h" //for _get_testplanlog().
+
 #ifdef LWIP_HOOK_FILENAME
 #include LWIP_HOOK_FILENAME
 #endif
@@ -541,10 +544,28 @@ ip4_input(struct pbuf *p, struct netif *inp)
     /* start trying with inp. if that's not acceptable, start walking the
        list of configured netifs. */
     if (ip4_input_accept(inp)) {
+	  static int jjaccept = 0;
       netif = inp;
+		
 		//printf("  ip4_input_accept: ip_addr %04x%04x\r\n", lwip_htons((u16_t)(inp->ip_addr.addr & 0xffff)), 
 		//	lwip_htons((u16_t)(inp->ip_addr.addr >> 16)));
+			
+		#if 1
+		if (get_testplanlog()) {
+		   printf("%d. ip4_input_accept, NETIF_FOREACH(netif) ip_addr %"U16_F".%"U16_F".%"U16_F".%"U16_F", netif->link_speed %u\r\n", ++jjaccept, 
+			ip4_addr1_16(netif_ip4_addr(netif)), //ip_addr, 
+			ip4_addr2_16(netif_ip4_addr(netif)),
+			ip4_addr3_16(netif_ip4_addr(netif)), 
+			ip4_addr4_16(netif_ip4_addr(netif)),
+			netif->link_speed); //, netif->hostname
+		}
+		#endif
     } else {
+		static int jjnaccept = 0;
+		#if 1
+		printf("%d. NOT ip4_input_accept, NETIF_FOREACH(netif== NULL) non-accepted!\r\n", ++jjnaccept);
+		#endif
+		
       netif = NULL;
 #if !LWIP_NETIF_LOOPBACK || LWIP_HAVE_LOOPIF
       /* Packets sent to the loopback address must not be accepted on an
@@ -554,12 +575,30 @@ ip4_input(struct pbuf *p, struct netif *inp)
 #endif /* !LWIP_NETIF_LOOPBACK || LWIP_HAVE_LOOPIF */
       {
 #if !LWIP_SINGLE_NETIF
+		int jj = 0;
         NETIF_FOREACH(netif) {
+			
+			#if 1
+		   printf("NETIF_FOREACH(netif) %d. ip_addr %"U16_F".%"U16_F".%"U16_F".%"U16_F", netif->link_speed %u\r\n", ++jj, 
+			ip4_addr1_16(netif_ip4_addr(netif)), //ip_addr, 
+			ip4_addr2_16(netif_ip4_addr(netif)),
+			ip4_addr3_16(netif_ip4_addr(netif)), 
+			ip4_addr4_16(netif_ip4_addr(netif)),
+			netif->link_speed); //, netif->hostname
+			#endif
+			
           if (netif == inp) {
             /* we checked that before already */
             continue;
           }
           if (ip4_input_accept(netif)) {
+			#if 1
+			printf("NETIF_FOREACH(netif) %d. ip_addr %"U16_F".%"U16_F".%"U16_F".%"U16_F", accepted!\r\n", jj, 
+				ip4_addr1_16(netif_ip4_addr(netif)), //ip_addr, 
+				ip4_addr2_16(netif_ip4_addr(netif)),
+				ip4_addr3_16(netif_ip4_addr(netif)), 
+				ip4_addr4_16(netif_ip4_addr(netif))); 
+			#endif
             break;
           }
         }
@@ -633,6 +672,9 @@ ip4_input(struct pbuf *p, struct netif *inp)
       MIB2_STATS_INC(mib2.ipindiscards);
     }
     pbuf_free(p);
+	#if 1
+	printf("NETIF_FOREACH(netif== NULL) just non-accepted! then! pbuf_free(p);\r\n");
+	#endif
     return ERR_OK;
   }
   /* packet consists of multiple fragments? */
@@ -714,6 +756,9 @@ ip4_input(struct pbuf *p, struct netif *inp)
 #if LWIP_ICMP
       case IP_PROTO_ICMP:
         MIB2_STATS_INC(mib2.ipindelivers);
+		#if 1
+        //printf("\r\n pass to icmp_input: len %d\r\n", p->tot_len);
+		#endif
         icmp_input(p, inp);
         break;
 #endif /* LWIP_ICMP */

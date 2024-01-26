@@ -895,12 +895,14 @@ etharp_output(struct netif *netif, struct pbuf *q, const ip4_addr_t *ipaddr)
     }
     /* no stable entry found, use the (slower) query function:
        queue on destination Ethernet address belonging to ipaddr */
+	printf("........898.etharp_query(netif........\r\n");
     return etharp_query(netif, dst_addr, q);
   }
 
   /* continuation for multicast/broadcast destinations */
   /* obtain source Ethernet address of the given interface */
   /* send packet directly on the link */
+  printf("........906.ethernet_output(netif........\r\n");
   return ethernet_output(netif, q, (struct eth_addr *)(netif->hwaddr), dest, ETHTYPE_IP);
 }
 

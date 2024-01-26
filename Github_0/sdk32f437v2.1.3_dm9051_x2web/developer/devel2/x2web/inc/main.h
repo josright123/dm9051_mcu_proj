@@ -136,8 +136,8 @@ void set_publish_disp_time(int i, uint16_t val);
 uint32_t get_publish_expr_time(int i);
 //static void set_publish_expr_time(int i, uint32_t valbit32);
 
-//void lwip_get_mac_addresse0(uint8_t *adr);
-uint8_t *lwip_get_mac_addresse1(void);
+#define	lwip_get_mac_addresse1()	mstep_eth_mac()
+//uint8_t *lwip_get_mac_addresse1(void); //void lwip_get_mac_addresse0(uint8_t *adr);
 
 char *get_application_name(void);
 char *get_application_banner(void);
@@ -166,9 +166,9 @@ void lwip_copy_ip_addresse(uint8_t *ipadr);
 void lwip_copy_qw_addresse(uint8_t *ipadr);
 void lwip_copy_mask_addresse(uint8_t *ipadr);
 #else
-uint8_t *lwip_get_ip_addresse(void);
-uint8_t *lwip_get_qw_addresse(void);
-uint8_t *lwip_get_mask_addresse(void);
+const uint8_t *lwip_get_ip_addresse(void);
+const uint8_t *lwip_get_qw_addresse(void);
+const uint8_t *lwip_get_mask_addresse(void);
 #endif
 
 void debug_dynamic_page(void);

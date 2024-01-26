@@ -371,7 +371,8 @@ static int calc_impl_struct_pages(char *data) {
 	//impldata_skel_t *p = (impldata_skel_t *) data__implement_html; //struct fs_file *file = ;
 	char *data_t = data, *data_s;
 	int i; //const char *p;
-	uint8_t *dev, *mac;
+	const uint8_t *dev;
+	const uint8_t *mac;
 
 //printf("calc, data__implement_html[] %x (size %d)\r\n", data__implement_html, sizeof(data__implement_html));	
 	
@@ -462,7 +463,8 @@ static int calc_impl_struct_pages(char *data) {
 static int setup_impl_pages(char *data, int content_length) {  // make, data__implement_html[]
 	int n_raw = 0, ns, re_content_length;
 	int i; //const char *p;
-	uint8_t *dev, *mac;
+	const uint8_t *dev;
+	const uint8_t *mac;
 #if 1
 #if 1
 	memcpy(data + n_raw, http_header, sizeof(http_header));

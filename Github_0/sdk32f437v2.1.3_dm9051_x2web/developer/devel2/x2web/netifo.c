@@ -13,8 +13,8 @@
 #include "lwip/prot/dhcp.h"
 #include "lwip/prot/iana.h"
 
-#include "dm9051_lw.h" //#include "dm9051opts.h"
 #include "dm9051_lw_conf.h" //#include "dm9051_lw_decl.h"
+#include "dm9051_lw.h" //#include "dm9051opts.h"
 #include "testproc/testproc_lw.h" //#include "dm9051_lw_testproc.h"
 #include "testproc/ethernetif.h"
 */
@@ -40,8 +40,8 @@
 #include <string.h>
 //#endif //LWIP_IPV4 && LWIP_DHCP
 
-#include "dm9051_lw.h" //#include "dm9051opts.h"
 #include "dm9051_lw_conf.h" //#include "dm9051_lw_decl.h"
+#include "dm9051_lw.h" //#include "dm9051opts.h"
 
 #include "ethernetif.h"
 

@@ -1,5 +1,5 @@
-#include "dm9051_lw.h"
 #include "dm9051_lw_conf.h"
+#include "dm9051_lw.h"
 #include "lwip/apps/httpd.h"
 
 #include "developer_conf.h"
@@ -146,6 +146,7 @@ void banner_arg(char *str, uint8_t value)
 #define DUMP_FREQ_MS 25 //250 //1500 note: more fast is better, and it can continuous input packets recyclely.
 static uint32_t local_time;
 
+static uint16_t moni_rxrp = 0;
 
 void rxrp_dump_print_init_show(void) { //init show
 	uint16_t rxrp;
@@ -155,19 +156,19 @@ void rxrp_dump_print_init_show(void) { //init show
 	//=moni_show_rxrp(); //~_moni_read_rxrp();
 	rxrp = cspi_read_reg(DM9051_MRRL);
 	rxrp |= cspi_read_reg(DM9051_MRRH) << 8;
-	printf(" %4x", rxrp);
+	moni_rxrp = rxrp;
+	printf("<%d>.%4x ", mstep_get_net_index(), rxrp);
 	
 	local_time = sys_now() + DUMP_FREQ_MS; //since 'fcr_stage_flag' true
 }
 static int rxrp_read_print_diff_show(void) { //diff show
 	//=return moni_read_rxrp();
-	static uint16_t moni_rxrp = 0;
 	uint16_t rxrp;
 	rxrp = cspi_read_reg(DM9051_MRRL);
 	rxrp |= cspi_read_reg(DM9051_MRRH) << 8;
 	if (rxrp != moni_rxrp) {
 		moni_rxrp = rxrp;
-		printf(" %4x", moni_rxrp);
+		printf("<%d> %4x ", mstep_get_net_index(), moni_rxrp);
 		return 1;
 	}
 	return 0;
@@ -206,7 +207,7 @@ static int moni_read_rxwp(void) { //.diff
 	rxwp |= cspi_read_reg(DM9051_RWPAH) << 8;
 	if (rxwp != moni_rxwp) {
 		moni_rxwp = rxwp;
-		printf(" %4x", moni_rxwp);
+		printf(" [%d].%4x", mstep_get_net_index(), moni_rxwp);
 		return 1;
 	}
 	return 0;
@@ -415,7 +416,7 @@ void on_cyc_count_malloc(int ctarget)
 void tp_fcr_ingress_init(void) //.(int set_tp_stage)
 {
   void dm9051_mac_adr(const uint8_t *macadd);
-  uint8_t *mac = lwip_get_mac_addresse1();
+  const uint8_t *mac = lwip_get_mac_addresse1();
 	
 	//if (tp_state(_TST_LINKUP_FOUND)) { //I.E. (gtestproc_stage == _TST_LINKUP_FOUND)
 	  //gtestproc_stage = set_tp_stage;
@@ -429,7 +430,7 @@ void tp_fcr_ingress_init(void) //.(int set_tp_stage)
 	  //uint8_t val = flow_control_test_config_init();
 	  //printf("tp_fcr test: cspi_write_reg(DM9051_FCR, value) is %02x)\r\n", val);
 		
-	  if (isflowcontrolmode()) {
+	  if (OPT_CONFIRM(flowcontrolmode)) {
 		printf("  RESET[%d]: %s, fcr value %02x\r\n", mstep_get_net_index(), dm9051opts_descflowcontrolmode(), FCR_DEFAULT_CONF);
 		DM9051_Write_Reg(DM9051_FCR, FCR_DEFAULT_CONF);
 	  } else
@@ -445,27 +446,33 @@ void tp_fcr_ingress_init(void) //.(int set_tp_stage)
 	//}
 }
 
+void in_ingress_monitor(void)
+{
+	if (rxwp_read_print_diff()) {
+		ctest_stage_flag++;
+		if (!(ctest_stage_flag % 16))
+		  printf("\r\n");
+	}
+}
+
 void tp_fcr_ingress(void) //(int set_tp_stage)
 {
 	//if (gtestproc_stage == set_tp_stage) {
 	  if (ctest_stage_flag) { //also starting by set 1
-		if (rxwp_read_print_diff()) {
-			ctest_stage_flag++;
-			if (!(ctest_stage_flag % 16))
-			  printf("\r\n");
-		}
+		in_ingress_monitor();
 	  }
 	//}
 }
 
-void dump_rx_hdlr(void)
+uint16_t dump_rx_hdlr(void)
 {
 	  //uint16_t len;
 	  //int l = 0;
 	  uint8_t *buffer = get_rx_buffer(); //&EthBuff[0].rx;
 		
 	  //len = 
-		dm9051_rx_dump(buffer); //dm9051_rx_dump(buffer); //dm9051_rx(buffer);
+		return dm9051_rx_dump(buffer);
+		//dm9051_rx(buffer); //dm9051_rx_dump(buffer); //dm9051_rx_dump(buffer);
 	  //if (!len)
 	  //  return NULL;
 }
@@ -508,7 +515,7 @@ void up_checksum_sendings(void)
 
 	  out_packet(OUT_TEST_UDP, buffer, l, buffer_discovercc, sizeof(buffer_discovercc));
 	  out_packet(OUT_TEST_UDP, buffer, l, buffer_discover00, sizeof(buffer_discover00));
-	//#if TEST_PLAN_MODE
+	// #_if_TEST_PLAN_MODE
 	//.Write to [TCSCR_UDPCS_ENABLE/TCSCR_TCPCS_ENABLE/TCSCR_IPCS_ENABLE]
 	  //.printf("Start-generation cspi_read_reg() = %02x\r\n", cspi_read_reg(_DM9051_CSCR));
 	  val = TCSCR_UDPCS_ENABLE | TCSCR_IPCS_ENABLE;
@@ -516,14 +523,14 @@ void up_checksum_sendings(void)
 	  cspi_write_reg(DM9051_CSCR, val); //for more instead of TCSCR_UDPCS_ENABLE | TCSCR_IPCS_ENABLE
 	  banner_arg("cspi_write_reg _DM9051_CSCR Reg31H [IPCS_ENABLE/UDPCS_ENABLE] 0x%02x", val);
 	  //printf("cspi_read_reg() = %02x\r\n", cspi_read_reg(_DM9051_CSCR));
-	//#endif
+	// #_endif
 	  out_packet(OUT_TEST_UDP, buffer, l, buffer_discovercc, sizeof(buffer_discovercc));
-	//#if TEST_PLAN_MODE
+	// #_if_TEST_PLAN_MODE
 	//.Write to [0]
 	  cspi_write_reg(DM9051_CSCR, 0);
 	  //banner("cspi_write_reg _DM9051_CSCR 0x31 [IPCS_DISABLE/UDPCS_DISABLE] 0");
 	  //printf("cspi_read_reg(_DM9051_CSCR) = %02x\r\n", cspi_read_reg(_DM9051_CSCR));
-	//#endif
+	// #_endif
 	  //.send_udp_main(); //out_packet(OUT_TEST_UDP, ...);
 	  out_packet(OUT_TEST_UDP, buffer, l, buffer_discover, sizeof(buffer_discover));
 		
@@ -533,7 +540,7 @@ void up_checksum_sendings(void)
 		
 	  out_packet(OUT_TEST_TCP, buffer, l, buffer_syncc, sizeof(buffer_syncc));
 	  out_packet(OUT_TEST_TCP, buffer, l, buffer_syn00, sizeof(buffer_syn00));
-	//#if TEST_PLAN_MODE
+	//#_if_TEST_PLAN_MODE
 	//.Write to [TCSCR_UDPCS_ENABLE/TCSCR_TCPCS_ENABLE/TCSCR_IPCS_ENABLE]
 	  //.printf("Start-generation cspi_read_reg() = %02x\r\n", cspi_read_reg(_DM9051_CSCR));
 	  val = TCSCR_TCPCS_ENABLE | TCSCR_IPCS_ENABLE;
@@ -541,15 +548,15 @@ void up_checksum_sendings(void)
 	  cspi_write_reg(DM9051_CSCR, val); //v.s. for more instead of  TCSCR_TCPCS_ENABLE | TCSCR_IPCS_ENABLE
 	  banner_arg("cspi_write_reg _DM9051_CSCR Reg31H [IPCS_ENABLE/TCPCS_ENABLE] 0x%02x", val);
 	  //printf("cspi_read_reg() = %02x\r\n", cspi_read_reg(_DM9051_CSCR));
-	//#endif
+	//#_endif
 	  out_packet(OUT_TEST_TCP, buffer, l, buffer_syncc, sizeof(buffer_syncc)); //v.s. buffer_syn00, sizeof(buffer_syn00)
 		//v.s. buffer_syncc, sizeof(buffer_syncc)
-	//#if TEST_PLAN_MODE
+	//#_if_TEST_PLAN_MODE
 	//.Write to [0]
 	  cspi_write_reg(DM9051_CSCR, 0);
 	  //banner("cspi_write_reg _DM9051_CSCR 0x31 [IPCS_DISABLE/TCPCS_DISABLE] 0");
 	  //printf("cspi_read_reg(_DM9051_CSCR) = %02x\r\n", cspi_read_reg(_DM9051_CSCR));
-	//#endif
+	//#_endif
 	  out_packet(OUT_TEST_TCP, buffer, l, buffer_sync, sizeof(buffer_sync));
 		
 	  banner("Next, Receiving IP/UDP/TCP packetS ...");
@@ -559,7 +566,7 @@ void up_checksum_sendings(void)
 	#if 1 //STATEs
 	  //.testproc_stage = _TST_CHECKSUM_RECVS; //TST_CHECKSUM_SENDS_DONE; //TST_SEND_DONE;  //sending_done_flag = 1; //rx is allowed
  #if 0
-	  check_set_new(); //logic applied start. (do when need monotor 'rxb')
+	  //.check_set_new(); //logic applied start. (do when need monotor 'rxb')
  #endif
 	#endif //STATEs
 	  return;
@@ -579,7 +586,7 @@ int do_checksum_for_a_end(void)
 		//uint8_t save_fcr;
 		uint8_t buf[6];
 	#if 1
-		cspi_read_regs(DM9051_PAR, buf, 6, csmode()); //dm9051opts_csmode_tcsmode()
+		cspi_read_regs(DM9051_PAR, buf, 6, OPT_CS(csmode)); //enum_csmode(), dm9051opts_csmode_tcsmode()
 		//buf[0] = cspi_read_reg(DM9051_PAR); buf[1] = cspi_read_reg(DM9051_PAR+1); buf[2] = cspi_read_reg(DM9051_PAR+2);
 		//buf[3] = cspi_read_reg(DM9051_PAR+3); buf[4] = cspi_read_reg(DM9051_PAR+4); buf[5] = cspi_read_reg(DM9051_PAR+5);
 	#endif
@@ -649,8 +656,6 @@ void proc_test_plan(void)
 			bannerline();
 			continue;
 		  }
-		  
-		  set_testplanlog(TRUE); //set_dm9051opts_testplanlog(TRUE);
 		  
   //[flow-control test]
   #if 0
@@ -763,30 +768,76 @@ void proc_test_plan(void)
   } while(0);
 }
 
-void proc_test_plan_done(void) {
-  set_testplanlog(FALSE); //set_dm9051opts_testplanlog(FALSE);
-  gtestproc_stage = TST_ALL_DONE;
-}
-
 void proc_testing(void)
 {
 #if LWIP_TESTMODE
- #if 1
-  #if (LWIP_TESTMODE == 1)
-    proc_test_plan();
-    proc_test_plan_done();
-	
+  proc_test_plan();
+#endif
+}
+
+void proc_test_plan_alldone(void) {
+  gtestproc_stage = TST_ALL_DONE;
+}
+
+void proc_alldone_reset(void)
+{
+#if LWIP_TESTMODE
+	int b;
+	uint8_t nsr;
+   #if 1
 	bannerline();
-	printf("Test done, NEXT reset with ethernetif_reset_proc() ...\r\n");
+	printf("... Test done, NEXT reset with ethernetif_reset_proc() ...\r\n");
 	
-	ethernetif_reset_proc(); //dm9051_reset_process();
+	for (b = 0; b < ETHERNET_COUNT; b++) {  
+		mstep_set_net_index(b);
+		#if 1
+		nsr = cspi_read_reg(DM9051_NSR);
+		printf("... Start.s nsr %02x\r\n", nsr);
+	
+		ethernetif_reset_proc(); //dm9051_reset_process();
+	
+		dm_delay_ms(10);
+		nsr = cspi_read_reg(DM9051_NSR);
+		printf("... Start.e nsr %02x\r\n", nsr);
+		#endif
+	}
+   #else
+	bannerline();
+	banner("......SKIP SKIP SKIPING the test-plan functions......");
+   #endif
+#endif
+}
+
+void testmode_real(void)
+{
+#if LWIP_TESTMODE || LWIP_TESTMODE_REAL
+  //.set_testplanlog(TRUE); //set_dm9051opts_testplanlog(TRUE);
+  if (get_testplaninclude())
+	proc_testing();
+  
+  #if LWIP_TESTMODE_REAL
+	  //if. Davicom (can RST such way!)
+	  proc_alldone_reset();
+	  /*
+	   * dm9051_reset_process(void) proc_alldone_reset().
+	   */
+  #else
+	  //else. CH390 (can not as RST above way!)
+	  do {
+		int b;
+		uint8_t nsr;
+		for (b = 0; b < ETHERNET_COUNT; b++) {  
+			mstep_set_net_index(b);
+			#if 1
+			nsr = cspi_read_reg(DM9051_NSR);
+			printf("... Start.s nsr %02x\r\n", nsr);
+			dm_delay_ms(10);
+			nsr = cspi_read_reg(DM9051_NSR);
+			printf("... Start.e nsr %02x\r\n", nsr);
+			#endif
+		}
+	  } while(0);
   #endif
- #else
-  // ...FXD,.MVBMLKBERTB...............
-  //printf("......SKIP SKIP SKIPING the test-plan functions......\r\n");
-  banner("......SKIP SKIP SKIPING the test-plan functions......");
-  proc_test_plan_done();
- #endif
 #endif
 }
 
@@ -805,12 +856,63 @@ static void proc_run_handler(int i) //HOW i can suit for!
 	#endif
 }
 
+//static int rxtest_stage_flag = 0; already!
+static int dump_rx_stage_flag = 0;
+static int dump_odd_count = 0;
+static void testfunc(void)
+{
+	int i;
+	uint16_t len;
+	for (i = 0; i < ETHERNET_COUNT; i++) {
+		mstep_set_net_index(i);
+		//in_ingress_monitor();= no need.
+		
+		//flush_path();=
+		#if 1
+		  len = dump_rx_hdlr();
+		  if (len & 1) {
+			  printf("\r\n+ tesfunc +oddfound %d (len %d)\r\n", ++dump_odd_count, len);
+		  }
+		
+		  if (rxrp_read_print_diff_show()) {  
+			dump_rx_stage_flag++;
+			if (!(dump_rx_stage_flag % 16))
+				printf("\r\n");
+		  }
+		  //threads_support()
+		#endif
+	}
+	threads_support();
+}
+
+void testing_loop(void)
+{
+	int i;
+	
+	dump_rx_stage_flag = 1; // such as increase one.
+	
+	for (i = 0; i < ETHERNET_COUNT; i++) {
+		mstep_set_net_index(i);
+		cspi_write_reg(DM9051_RCR, RCR_DEFAULT | RCR_PRMSC | RCR_RXEN); //promiscuse!
+		rxrp_dump_print_init_show(); //_moni_read_rxrp(); //"init"
+	}
+	
+	while(1)
+		testfunc();
+}
+
 void periodic_loop(void)
 {
 	int i;
 	for (i = 0; i < ETHERNET_COUNT; i++) {
 		if (netif_is_link_up(&xnetif[i])) { //Added for exactly~
 			mstep_set_net_index(i);
+			
+			#if 1 //[debug rxwp]
+			if (get_testplanlog())
+				in_ingress_monitor();
+			#endif
+			
 			proc_run_handler(i); //PARAM i
 		}
 

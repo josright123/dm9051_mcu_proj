@@ -108,7 +108,7 @@ int weight_support(u16_t sec, u16_t keep_alive)
 }
 #endif
 
-int timeouts_linkdown_process(void)
+/*int timeouts_linkdown_process(void)
 {
 	extern int netconf_is_link_up(void);
 	static u8_t lnkdwn_count = 0;
@@ -125,7 +125,7 @@ int timeouts_linkdown_process(void)
 		}
 	}
 	return 0;
-}
+}*/
 
 //[Driver][suppliment]
 

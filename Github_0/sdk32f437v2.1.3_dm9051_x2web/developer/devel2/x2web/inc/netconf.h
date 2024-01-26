@@ -67,6 +67,7 @@ struct net_s
 
 /* Includes ------------------------------------------------------------------*/
 void tcpip_stack_init(void);
+void since_tcpip_stack_init(void);
 //static void lwip_pkt_handle(void);
 
 err_t lwip_rx_hdlr(int i);

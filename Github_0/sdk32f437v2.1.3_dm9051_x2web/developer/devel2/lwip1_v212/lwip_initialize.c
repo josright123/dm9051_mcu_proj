@@ -17,7 +17,7 @@ void lwip_initialize(void)
   #define PROGRAMMER_TEST_LEN	MMALLOC_MAX_LEN //3KB --> 1kb
   prefix_str = (char *) malloc(PROGRAMMER_TEST_LEN); //3KB
 	
-  bannerline();
+  //bannerline();
   sprintf(prefix_str, "%d/%d init!!", 0, 0);
   printf(".###. %s [ %lx = malloc( %d ) for startup test for a reference can according to]\r\n", prefix_str, prefix_str, PROGRAMMER_TEST_LEN);
   
@@ -56,6 +56,7 @@ void lwip_initialize(void)
 
 void lwip_reinitialize(void)
 {
+  int i;
  //#if (LWIP_TESTMODE == 1)
   //anythings, others 
   //lwip_init
@@ -63,7 +64,12 @@ void lwip_reinitialize(void)
   PUT_proc_runs_init_SYS_TIMEOUTS_INIT(); //=sys_timeouts_init();
   //such as httpd_init()
   //... , could put here!
-  
+	
+  for (i = 0; i < ETHERNET_COUNT; i++)
+  {
+	mstep_set_net_index(i);
+    since_tcpip_stack_init(); //~setarpflag_for_ever_netif_set_up();
+  }
   
  //#endif
 }

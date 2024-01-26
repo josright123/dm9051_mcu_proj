@@ -37,8 +37,8 @@
  * Date: 20230919
  * Date: 20230919 (V0)
  */
-#include "dm9051_lw.h" //#include "at32f415_board.h" //
 #include "dm9051_lw_conf.h"
+#include "dm9051_lw.h" //#include "at32f415_board.h" //
 
 //#include "at32_cm4_device_support.h" //#include "at32f435_437_board.h" //""at32f413_board.h" //#include "at32f415_board.h" //"at32f403a_407_board.h"
 #define DEVELOPER_CONF
@@ -77,59 +77,84 @@ uint16_t get_broker_listen_port(void)
 	return MQTT_BROKER_LISTEN_PORT;
 }
 
-DECLARATION_MAC_ADDR; //'mac_addresse'
-#if (!LWIP_DHCP)
-DECLARATION_LOCAL_IPADDR;
-#endif
+//..DECLARATION_MAC_ADDR; //'mac_addresse'
+
+//#if (!LWIP_DHCP)
+//DECLARATION_LOCAL_IPADDR;
+//#endif
 
 #ifdef ETHERNETIF_COPY
 void lwip_copy_ip_addresse(uint8_t *ipadr)
 {
 	int i = mstep_get_net_index();
-	memcpy(ipadr, &cfg_local_ipe[i][0], ADDR_LENGTH);
-}
-void lwip_copy_mask_addresse(uint8_t *ipadr)
-{
-	int i = mstep_get_net_index();
-	memcpy(ipadr, &cfg_local_maske[i][0], ADDR_LENGTH);
+	memcpy(ipadr, mstep_eth_ip(), ADDR_LENGTH);
 }
 void lwip_copy_qw_addresse(uint8_t *ipadr)
 {
 	int i = mstep_get_net_index();
-	memcpy(ipadr, &cfg_local_gwe[i][0], ADDR_LENGTH);
+	memcpy(ipadr, mstep_eth_gw(), ADDR_LENGTH);
+}
+void lwip_copy_mask_addresse(uint8_t *ipadr)
+{
+	int i = mstep_get_net_index();
+	memcpy(ipadr, mstep_eth_mask(), ADDR_LENGTH);
 }
 #else
-uint8_t *lwip_get_ip_addresse(void) {
-	int i = mstep_get_net_index();
-	return &cfg_local_ipe[i][0];
+const uint8_t *lwip_get_ip_addresse(void) {
+	//int i = mstep_get_net_index(); //&cfg_local_ipe[i][0];
+	//return mstep_eth_ip();
+	//uint8_t *dev;
+	//int i = mstep_get_net_index(); //&cfg_local_ipe[i][0];
+	//dev = &cfg_local_ipe[i][0];
+	//printf("cfg_local_ipe[%d]: %d %d %d %d\r\n", i, dev[0], dev[1], dev[2], dev[3]);
+	//dev = mstep_eth_ip();
+	//printf("mstep_eth_ip()[%d]: %d %d %d %d\r\n", mstep_get_net_index(), dev[0], dev[1], dev[2], dev[3]);
+	
+	return mstep_eth_ip();
 }
-uint8_t *lwip_get_mask_addresse(void) {
-	int i = mstep_get_net_index();
-	return &cfg_local_maske[i][0];
+const uint8_t *lwip_get_qw_addresse(void) {
+	//int i = mstep_get_net_index(); //&cfg_local_gwe[i][0];
+	//return mstep_eth_mask(); -wrong
+	//uint8_t *dev;
+	//int i = mstep_get_net_index(); //&cfg_local_gwe[i][0];
+	//dev = &cfg_local_gwe[i][0];
+	//printf("cfg_local_gwe[%d]: %d %d %d %d\r\n", i, dev[0], dev[1], dev[2], dev[3]);
+	//dev = mstep_eth_gw();
+	//printf("mstep_eth_gw()[%d]: %d %d %d %d\r\n", mstep_get_net_index(), dev[0], dev[1], dev[2], dev[3]);
+	
+	return mstep_eth_gw();
 }
-uint8_t *lwip_get_qw_addresse(void) {
-	int i = mstep_get_net_index();
-	return &cfg_local_gwe[i][0];
+const uint8_t *lwip_get_mask_addresse(void) {
+	//int i = mstep_get_net_index(); //&cfg_local_maske[i][0];
+	//return mstep_eth_gw(); -wrong
+	//uint8_t *dev;
+	//int i = mstep_get_net_index(); //&cfg_local_ipe[i][0];
+	//dev = &cfg_local_maske[i][0];
+	//printf("cfg_local_maske[%d]: %d %d %d %d\r\n", i, dev[0], dev[1], dev[2], dev[3]);
+	//dev = mstep_eth_mask();
+	//printf("mstep_eth_mask()[%d]: %d %d %d %d\r\n", mstep_get_net_index(), dev[0], dev[1], dev[2], dev[3]);
+	
+	return mstep_eth_mask();
 }
 #endif
 
 //void lwip_get_mac_addresse0(uint8_t *adr){
 //  memcpy(adr, &mac_addresse[mstep_get_net_index()][0], MAC_ADDR_LENGTH);
 //}
-uint8_t *lwip_get_mac_addresse1(void){
+
+//uint8_t *lwip_get_mac_addresse1(void){
 	#if 0
-	//int i = mstep_get_net_index();
-	uint8_t *p = &mac_addresse[mstep_get_net_index()][0];
-	printf("lwip_get_mac_addresse1 -> mac_addresse[%d][0]\r\n", mstep_get_net_index());
-	printf("ptr is %02x%02x%02x%02x%02x%02x, ", *p++, *p++,*p++,*p++,*p++,*p++);
-	printf("array is %02x%02x%02x%02x%02x%02x\r\n", mac_addresse[mstep_get_net_index()][0],
-		mac_addresse[mstep_get_net_index()][1],mac_addresse[mstep_get_net_index()][2],
-		mac_addresse[mstep_get_net_index()][3],mac_addresse[mstep_get_net_index()][4],
-		mac_addresse[mstep_get_net_index()][5]);
+	//uint8_t *p = &mac_addresse[mstep_get_net_index()][0];
+	//printf("lwip_get_mac_addresse1 -> mac_addresse[%d][0]\r\n", mstep_get_net_index());
+	//printf("ptr is %02x%02x%02x%02x%02x%02x, ", *p++, *p++,*p++,*p++,*p++,*p++);
+	//printf("array is %02x%02x%02x%02x%02x%02x\r\n", mac_addresse[mstep_get_net_index()][0],
+		//mac_addresse[mstep_get_net_index()][1],mac_addresse[mstep_get_net_index()][2],
+		//mac_addresse[mstep_get_net_index()][3],mac_addresse[mstep_get_net_index()][4],
+		//mac_addresse[mstep_get_net_index()][5]);
 	#endif
 	
-	return &mac_addresse[mstep_get_net_index()][0];
-}
+//	return &mac_addresse[mstep_get_net_index()][0];
+//}
 
 #if MQTT_CLIENT_SUPPORT
 	int publish_handle_expire(uint32_t expr_time)

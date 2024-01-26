@@ -16,7 +16,7 @@ err_t ethernetif_input(struct netif *netif);
 
 err_t ethernetif_inp(struct netif *netif);
 
-void lwip_set_mac(unsigned char* macadd);
+void lwip_set_mac(const uint8_t* macadd);
 void lwip_get_mac(uint8_t *adr);
 
 void ethernetif_line7_proc(void);

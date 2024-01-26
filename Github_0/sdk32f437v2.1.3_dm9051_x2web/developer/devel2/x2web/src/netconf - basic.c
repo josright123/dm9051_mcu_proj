@@ -27,14 +27,16 @@
 //#include "at32f435_437_board.h" //""at32f413_board.h" //#include "at32f415_board.h"
 //#include "at32_cm4_device_support.h" //#include "at32f415.h" //"at32f435_437.h" //"at32f413.h" //"at32f435_437_board.h"
 //#include "stdio.h"
-#include "dm9051_lw.h"
 #include "dm9051_lw_conf.h"
+#include "dm9051_lw.h"
 #include "ethernetif.h"
 #include "developer_conf.h" //#include "main.h" //#include "developer_conf.h"
 //#include "_dm9051_at32_conf.h" //"dm9051_env.h" //"dm9051f_netconf.h" //"at32_emac.h" //has #include "dm9051_lw.h"
 //#include "dm9051_spi_sync.h"
 //#include "dm9051_at32_decl.h" 
 #include "netconf.h" //has #include "ethernetif.h"
+#include "netconf_b.h"
+#include "test/test_state.h" //driver also
 #include "testproc/testproc_lw.h"
 #include <string.h>
 
@@ -62,22 +64,23 @@ net_t *s__net_instance[ETHERNET_COUNT]; //net_t*
 }
 #endif
 
-int netconf_is_link_up(void)
+/*int netconf_is_link_up(void)
 {
 	int pin = mstep_get_net_index();
 	//return netif_is_up(&netif); //?
 	return netif_is_link_up(&xnetif[pin]);
-}
+}*/
 
 int testing_rx_count = 0;
 
+#if 1
 err_t checksum_check_rxhdlr(int i) //lwip_rx_hdlr(void)
 {
   //err_t err;
-//#if TEST_PLAN_MODE
+//#_if_TEST_PLAN_MODE
 //  if (!check_get()) //!checkrxbcount
 //	  return ERR_INPROGRESS;
-//#endif
+//#_endif
 
   //err = 
   //return ethernetif_inp(&xnetif[i]);
@@ -92,6 +95,15 @@ err_t checksum_check_rxhdlr(int i) //lwip_rx_hdlr(void)
 	  if (!len)
 		  return ERR_INPROGRESS;
 	  
+	//if (checksum_re_rxb(rxbyte) == DM9051_PKT_RDY)
+	//{
+		//.printf("[rx %d]\r\n", get_testing_rx_count()); //testing_rx_count
+		if (!tp_all_done()) {
+			printf("[rx %d]\r\n", get_testing_rx_count());
+			display_state();
+		}
+	//}
+			
 	  //testing_rx_count++;
 	  dm9051_rxlog_monitor_rx_all(2, buffer, len); //dm9051_rxlog_monitor_rx();
 	  
@@ -106,6 +118,7 @@ err_t do_checksum_check_rxhdlr(void) //lwip_rx_hdlr(void)
   int i = mstep_get_net_index();;
   return checksum_check_rxhdlr(i);
 }
+#endif
 
 /**
   * @brief  this function is receive handler.
@@ -127,25 +140,23 @@ void lwip_rx_loop_handler(void)
   DM9051_RX_DBGMSG(err != ERR_OK && err != ERR_INPROGRESS, ("[netconf.c] ethernetif_input: IP input error\r\n"));
 }
 
-static
-void op_link_timer(net_t *net) {
+/*static
+void func_link_timer(net_t *net) {
   #define CARRY_NUM 3 //5 //7
-  static int xcarry[ETHERNET_COUNT] = { 0 };
+  static int xcarry[ETHERNET_COUNT] = { 0 }; //{ 0, 0 };
+  static int xc[ETHERNET_COUNT] = { 0 }; //{ 0, 0 };
   static volatile uint8_t first_2rst_timer1500_2cnnt2initpub = 1;
-  //.static volatile uint8_t first_timer_coerce2lnk = 1; /* #if 0/#endif, Global assurance */
+  //.static volatile uint8_t first_timer_coerce2lnk = 1;
   int pin;
   uint16_t bmsr;
-  uint8_t chip_link_up; //= (uint8_t) dm9051_link_update_dual(); //.dm9051_link_update();
+  uint8_t chip_link_up; //= (uint8_t) dm9051_link_update_dual(); //.dm9051_bmsr_update();
 
   pin = mstep_get_net_index(); //= net->netif_pin_code;
   bmsr = dm9051_bmsr_update();
   chip_link_up = bmsr & 0x0004;
 
 do {
-	static int xc[ETHERNET_COUNT] = { 0 };
-	
 	//operation_to[pin]
-	
 	if (!netif_is_link_up(&xnetif[pin])) {
 		if (xcarry[pin] < CARRY_NUM) {
 			xc[pin]++;
@@ -154,7 +165,7 @@ do {
 				if (xcarry[pin] == CARRY_NUM) {
 					//'chip_link_up' always should be down!?
 					//printf("&xnetif[%d] %s, %"U16_F".%"U16_F".%"U16_F".%"U16_F" (%s/ %02d.times_link_state %s dm9051[%d])\r\n", 
-						//pin, /*xcarry[pin],*/ chip_link_up ? "up" : "down",
+						//pin, chip_link_up ? "up" : "down",
 						//ip4_addr1_16(netif_ip4_addr(&xnetif[pin])), 
 						//ip4_addr2_16(netif_ip4_addr(&xnetif[pin])),
 						//ip4_addr3_16(netif_ip4_addr(&xnetif[pin])), 
@@ -196,7 +207,7 @@ do {
 			if (!tp_all_done())
 				linkup_spring_cb(NULL, NULL, NET_LINK_UP);
 			else
-				linkup_re_cb(NULL, NULL, NET_LINK_UP); /*net->net_cb*/ 
+				linkup_re_cb(NULL, NULL, NET_LINK_UP);
 		//#endif
 		//#if LINK_DETECTION_NET_IMPL
 		} else if (linkhandler_type() == TYPE_TIMEROUTS) {
@@ -232,14 +243,14 @@ do {
   {
 	if (chip_link_up)
 		tpp_refine_linkup_progress();
-	/*if (!chip_link_up) //This is such as unplug CAT5-45J */ 
+	//if (!chip_link_up) //This is such as unplug CAT5-45J
 	else {
 		//#if LINK_DETECTION_TCK_IMPL
 		if (linkhandler_type() == TYPE_TICKS) {
 			if (!tp_all_done())
 				linkup_spring_cb(NULL, NULL, NET_LINK_DOWN);
 			else
-				linkup_re_cb(NULL, NULL, NET_LINK_DOWN); /*net->net_cb*/ 
+				linkup_re_cb(NULL, NULL, NET_LINK_DOWN);
 		//#endif
 		//#if LINK_DETECTION_NET_IMPL
 		} else if (linkhandler_type() == TYPE_TIMEROUTS) {
@@ -252,79 +263,9 @@ do {
 		first_2rst_timer1500_2cnnt2initpub = 0;
 	}
   }
-  
- #if 0
-  if (first_timer_coerce2lnk) { //"startup_linkdown_process"
-	first_timer_coerce2lnk++;
-	if (first_timer_coerce2lnk > ((1500 / get_link_handler_ms()) + 1)) { //add 1 for later a little.
-		//#if LINK_DETECTION_TCK_IMPL
-		if (linkhandler_type() == TYPE_TICKS) {
-			if (!tp_all_done())
-				linkup_spring_cb(NULL, NULL, chip_link_up ? NET_LINK_UP : NET_LINK_DOWN);
-			else
-				linkup_re_cb(NULL, NULL, chip_link_up ? NET_LINK_UP : NET_LINK_DOWN);
-		//#endif
-		//#if LINK_DETECTION_NET_IMPL
-		} else if (linkhandler_type() == TYPE_TIMEROUTS) {
-			printf("&xnetif[%d] %s, %"U16_F".%"U16_F".%"U16_F".%"U16_F" (%s/ 1500.link_state %s dm9051[%d])\r\n", 
-				pin, /*xcarry[pin],*/ chip_link_up ? "up" : "down",
-				ip4_addr1_16(netif_ip4_addr(&xnetif[pin])), 
-				ip4_addr2_16(netif_ip4_addr(&xnetif[pin])),
-				ip4_addr3_16(netif_ip4_addr(&xnetif[pin])), 
-				ip4_addr4_16(netif_ip4_addr(&xnetif[pin])),
-				chip_link_up ? "NET_LINK_UP" : "NET_LINK_DOWN",
-				chip_link_up ? "link up" : "link down", pin);
-			net->cbf(net, net->net_arg, chip_link_up ? NET_LINK_UP : NET_LINK_DOWN);
-		}
-		//#endif
-		first_timer_coerce2lnk = 0;
-		if (!chip_link_up)
-		  first_2rst_timer1500_2cnnt2initpub = 0;
-	}
-  }
-  
-  if (mqttc_is_connected() && first_2rst_timer1500_2cnnt2initpub) {
-	first_2rst_timer1500_2cnnt2initpub++;
-	if (first_2rst_timer1500_2cnnt2initpub > (1500 / get_link_handler_ms())) { // Calc to be 1.5 sec (1500 ms)
-		first_2rst_timer1500_2cnnt2initpub = 0;
-		
-	  #if 0
-		//printf(".[Publish_info]\r\n");
-		//print_publish_info(get_mqtt_publish_topic_number());
+}*/
 
-		//printf("\r\n");
-		//printf(".[Subscribe_info]\r\n");
-		//print_subscribe_info();
-		  
-		//printf("\r\n");
-		//publish_handle_news("link_tmr");
-	  #endif
-	}
-  }
- #endif
-
-  #if MQTT_CLIENT_SUPPORT
-  mqttc_goto_connect(&xnetif[pin], MY_PHY_LINKUP); /* bedo-once, Once relate to 'netif_is_link_up()' */
-  mqttc_connect();
-  #endif
-}
-
-/*static*/ 
-void phy_link_timer(void *arg) //=to_time_link() (are to phase-out, BUT keep called API-exist.)
-{
-  int pinsave = mstep_get_net_index(); //HERE save: pin = mstep_get_net_index();
-  mstep_set_net_index(((net_t *)arg)->netif_pin_code); //HERE SET: mstep_set_net_index(x);
-	
-  op_link_timer(arg); //.op_link_timer(pincode, net);
-	
-  if (linkhandler_type() == TYPE_TIMEROUTS)
-	sys_timeout(get_link_handler_ms(), phy_link_timer, arg);
-
-  onchange_timeouts_log("in-phy_link_timer");
-  mstep_set_net_index(pinsave); //HERE restore: pin = mstep_get_net_index();
-}
-
-void linkup_spring_cb(net_t *net, void *arg, u8_t status) {
+/*void linkup_spring_cb(net_t *net, void *arg, u8_t status) {
   int pin = mstep_get_net_index();
   if (status == NET_LINK_UP) {
 	tpp_set_linkup_stage(); //gtestproc_stage = _TST_LINKUP_FOUND;
@@ -335,7 +276,7 @@ void linkup_spring_cb(net_t *net, void *arg, u8_t status) {
 	
 	//netif_set_link_up(&xnetif[pin]); //netif_set_link_up_INITAndTimer(&netif);
 	//part of: ==
-	if (!(xnetif[pin].flags & NETIF_FLAG_LINK_UP)) //=NETIF_FLAG_LINK_UP=0x04U
+	if (!(xnetif[pin].flags & NETIF_FLAG_LINK_UP)) //=NETIF_FLAG_LINK_UP=0x04U //!netif_is_flag_set(&xnetif[pin], NETIF_FLAG_LINK_UP)
 	  netif_set_flags(&xnetif[pin], NETIF_FLAG_LINK_UP);
   }
   if (status == NET_LINK_DOWN) {
@@ -349,7 +290,7 @@ void linkup_spring_cb(net_t *net, void *arg, u8_t status) {
   #endif
 	//netif_set_link_down(&xnetif[pin]); //netif_set_link_down_Timer(&netif);
 	//part of: =
-	if (xnetif[pin].flags & NETIF_FLAG_LINK_UP)
+	if (xnetif[pin].flags & NETIF_FLAG_LINK_UP) //netif_is_flag_set(&xnetif[pin], NETIF_FLAG_LINK_UP)
 	  netif_clear_flags(&xnetif[pin], NETIF_FLAG_LINK_UP);
   }
 }
@@ -387,26 +328,10 @@ void linkup_re_cb(net_t *net, void *arg, u8_t status) {
 	mqttc_close(); //= _mqtt_close(client, MQTT_CONNECT_DISCONNECTED);
 	#endif
   }
-}
+}*/
 
 //#if LINK_DETECTION_NET
 	//#if LINK_DETECTION_NET_IMPL
-	static void net_new_task(net_t *net, net_link_cb_t cb, void *arg) //(void *arg)= NULL
-	{	
-	  net->netif_pin_code = mstep_get_net_index();
-	  net->link_state = NET_LINK_DOWN; //net->cyclic_tick = 0;
-	  net->net_arg = arg;
-	  net->cbf = cb;
-		
-	  /* Start cyclic link_handle timer */
-	  sys_timeout(get_link_handler_ms(), phy_link_timer, net); //(no sys_untimeout(), THIS IS FOREEVER LOOP CYCLE, such as 'link_handle()')
-	}
-	
-	static void net_renew_task(net_t *net, net_link_cb_t cb) //(, void *arg)
-	{
-	  net->cbf = cb;
-	}
-	
 	static int waitdone_flags[ETHERNET_COUNT] = { 0 };
 	
 	void waitdone_set_true(int i) {
@@ -424,7 +349,13 @@ void linkup_re_cb(net_t *net, void *arg, u8_t status) {
 			bmcr = phy_read(0);
 			printf("bmcr[%d] bmcrmode by %s, is %04x\r\n", i, dm9051opts_descncrmode(), bmcr);
 		}
-		printf("while(1), waiting... has [%d %d]\r\n", waitdone_flags[0], waitdone_flags[1]); //temp
+		
+		//printf("while(1), waiting... has [%d %d]\r\n", waitdone_flags[0], waitdone_flags[1]); //temp
+		printf("while(1)");
+		for (i = 0; i < ETHERNET_COUNT; i++)
+			printf(", waiting[%d]", waitdone_flags[i]);
+		printf(" ...\r\n");
+		
 		do {
 			threads_support();
 			
@@ -433,27 +364,34 @@ void linkup_re_cb(net_t *net, void *arg, u8_t status) {
 				if (!waitdone_flags[i])
 					loopf = 1;
 		} while(loopf);
-		printf("while(1), waiting... done [%d %d]\r\n", waitdone_flags[0], waitdone_flags[1]); //temp
+		
+		//printf("while(1), waiting... done [%d %d]\r\n", waitdone_flags[0], waitdone_flags[1]); //temp
+		printf("while(1)");
 		for (i = 0; i < ETHERNET_COUNT; i++)
-			if (netif_is_link_up(&xnetif[i]))
-				printf("dm9051[%d]... is active and is available...\r\n", i); //temp
+			printf(", waitDone[%d]", waitdone_flags[i]);
+		printf(" ...\r\n");
+		
+		//for (i = 0; i < ETHERNET_COUNT; i++)
+			//if (netif_is_link_up(&xnetif[i]))
+				//printf("dm9051[%d]... is active and is available...\r\n", i); //temp
 	}
 
 	void netlink_spring_init(void) // (are to phase-in, NOW start API-skelton.)
 	{
-	  s__net_instance[mstep_get_net_index()] = (net_t *)mem_calloc(1, sizeof(net_t));
-	  if (s__net_instance[mstep_get_net_index()] == NULL)
+	  int pin = mstep_get_net_index();
+	  s__net_instance[pin] = (net_t *)mem_calloc(1, sizeof(net_t));
+	  if (s__net_instance[pin] == NULL)
 	  {
-		printf("net: s__net_instance[i] malloc fail @@!!!\r\n");
+		printf("net: s__net_instance[%d] malloc fail @@!!!\r\n", pin);
 		while(1);
 	  }
-	  //s__net_instance[i]->link_state = NET_LINK_DOWN;
-	  net_new_task(s__net_instance[mstep_get_net_index()], linkup_spring_cb, NULL);
+	  net_new_task(s__net_instance[pin], linkup_spring_cb, NULL);
 	}
 	
 	void netlink_reinit(void)
 	{
-	  net_renew_task(s__net_instance[mstep_get_net_index()], linkup_re_cb); //(, NULL)
+	  int pin = mstep_get_net_index();
+	  net_renew_task(s__net_instance[pin], linkup_re_cb); //(, NULL)
 	}
 	//#endif
 //#endif

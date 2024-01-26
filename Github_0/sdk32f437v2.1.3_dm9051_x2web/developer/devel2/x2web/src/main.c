@@ -29,8 +29,8 @@
 //#include "at32f413_board.h" //"at32f403a_407_board.h"
 //#include "at32f413_clock.h" //"at32f403a_407_clock.h"
 
-#include "dm9051_lw.h"
 #include "dm9051_lw_conf.h"
+#include "dm9051_lw.h"
 #include "lwip/apps/httpd.h"
 #include "lwip/apps/fs.h"
 #include "ethernetif.h"
@@ -103,32 +103,31 @@ void time_update(void)
   */
 int main(void)
 {
-  //int ethernet_count;
   system_clock_config();
   uart_print_init(115200);
-//.test.lw-set
-	
   at32_board_init();
 
-//.bannerline();
-//.printf("[x2web start]\r\n");
   bannerline();
-  printf("[x2web start: BOARD_SPI COUNT %d]  /  [Operating: ETHERNET COUNT %d]\r\n", BOARD_SPI_COUNT, ETHERNET_COUNT);
+  bannerline();
+  printf("x2web start: [BOARD_SPI COUNT] %d  /  Operating: [ETHERNET COUNT] %d\r\n", BOARD_SPI_COUNT, ETHERNET_COUNT);
 	
-  //ethernet_count = 
-	dm9051_board_initialize(); //at32_dm9051_initialize();
-	
-ethcnt_ifdiplay_iomode();
+  dm9051_boards_initialize(); //at32_dm9051_initialize();
+  ethcnt_ifdiplay_iomode();
 
   lwip_initialize();
   tasks_base_init();
-  tmr_init(); //Used for link-down/link-up check, to be the latest-one !!
+  tmr_init(); //Used for link-down/link-up check, to be the init(s) latest-one !!
+  netlink_spring_wait();
 
-netlink_spring_wait();
+  set_testplanlog(TRUE); //sel TRUE to have log for rx and lwip input flow
+  testmode_real();
 
-#if LWIP_TESTMODE || LWIP_TESTMODE_REAL
-  proc_testing();
-#endif
+  set_testplanlog(FALSE); //set_dm9051opts_testplanlog(FALSE);  
+  if (!OPT_CONFIRM(rxtypemode)) { //== (isrxtype_test())
+	  printf("...................... plan a rx type test rx mode .......................\r\n");
+	  testing_loop();
+  }
+  proc_test_plan_alldone(); // for restore to be as init.
 
   lwip_reinitialize();
   tasks_mach_reinit(); //net->cbf = cb;

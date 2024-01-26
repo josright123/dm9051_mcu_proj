@@ -26,8 +26,8 @@
 #include "at32f435_437_int.h"
 #include "developer_conf.h" //#include "main.h"
 //#include "netconf.h" //_line7()
-#include "dm9051_lw.h"
 #include "dm9051_lw_conf.h"
+#include "dm9051_lw.h"
 
 /** @addtogroup AT32F437_periph_examples
   * @{

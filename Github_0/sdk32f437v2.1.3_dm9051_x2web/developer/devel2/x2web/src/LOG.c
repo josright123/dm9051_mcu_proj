@@ -22,10 +22,11 @@
 #include "lwip/pbuf.h"
 #include "netif/ppp/ppp_opts.h"
 
-#include "dm9051_lw.h"
 #include "dm9051_lw_conf.h"
+#include "dm9051_lw.h"
 #include "developer_conf.h" //#include "main.h" //#include "developer_conf.h"
 #include "netconf.h"
+#include "testproc/testproc_lw.h"
 #include <string.h>
 
 void mqtt_client_init_log(void)
@@ -40,6 +41,9 @@ void mqtt_client_init_log(void)
 
 void BannerDisplay(void)
 {
+  printf("\r\n");
+  printf("BannerDisplay() MEMP_MAX= %d\r\n", MEMP_MAX);
+	
   printf("\r\n");
 #if 0
   printf("@example                %s %s\r\n", get_application_name(), get_application_date());
@@ -88,7 +92,6 @@ void BannerDisplay(void)
 void NetifDisplay(int i)
 {
   //uint8_t mac[MAC_ADDR_LENGTH]; lwip_get_mac_addresse0(mac);
-  uint8_t * mac = lwip_get_mac_addresse1();
   printf("\r\n");
 	
   /*printf("mac:                    %02x:%02x:%02x:%02x:%02x:%02x\r\n", 
@@ -112,6 +115,7 @@ void NetifDisplay(int i)
 							      ip4_addr4_16(netif_ip4_gw(&xnetif[0])));*/
 								  
  #if 0
+  const uint8_t * mac = lwip_get_mac_addresse1();
   printf("mac[%d]:                %02x:%02x:%02x:%02x:%02x:%02x\r\n", i,
 							      mac[0], mac[1],
 							      mac[2], mac[3],
@@ -137,11 +141,15 @@ void NetifDisplay(int i)
 void EepromDisplay(int pin)
 {
 	int i;
+	printf("--EEPROM[%d] word", pin);
 	for (i = 0; i < 9; i++) {
 		uint16_t value;
 		value = eeprom_read(i);
-		printf("--EEPROM[%d] word %d %04x\r\n", pin, i, value);
+		printf("%s%04x", 
+			!(i % 4) ? "  " : " ",
+			value);
 	}
+	bannerline();
 }
 
 #if 0

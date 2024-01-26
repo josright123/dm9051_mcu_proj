@@ -30,7 +30,7 @@ static void ethernetif_notify_conn_changed(struct netif *netif)
 #endif
 	  
 #if MQTT_CLIENT_SUPPORT
-	// param: 1, start from dm9051_link_update() is true, and then _netif_set_link_up_INITAndTimer, and then NETIF_LINK_CALLBACK() ... and ...
+	// param: 1, start from dm9051_bmsr_update() is true, and then _netif_set_link_up_INITAndTimer, and then NETIF_LINK_CALLBACK() ... and ...
 #endif
   }
   else
@@ -54,15 +54,21 @@ static void env_ethernetif_update_config_cb(struct netif *netif) //tobe = env_li
   ethernetif_notify_conn_changed(netif);
 }
 
-char *display_identity_bannerline_title;  //= 
+extern char *display_identity_bannerline_title;  //= 
 
-static void cleararpflag_netif_set_up(struct netif *netif)
-{
-	u8_t savflg = netif->flags;
+static void cleararpflag_netif_set_up(struct netif *netif) {
+	//u8_t savflg = netif->flags;
+
 	netif_clear_flags(netif, NETIF_FLAG_ETHARP);
 	netif_set_up(netif);
+	//[tobe observed] netif_clear_flags(netif, NETIF_FLAG_UP);
 
-	netif->flags = savflg;
+	//netif->flags = savflg;
+}
+
+static void setarpflag_for_ever_netif_set_up(struct netif *netif) {
+	netif_set_flags(netif, NETIF_FLAG_ETHARP);
+	netif_set_flags(netif, NETIF_FLAG_UP);
 }
 
 /**
@@ -97,7 +103,7 @@ void tcpip_stack_init(void)
 	
   if (1) {
 	  /* 3. stack_start_core()= */
-	  uint8_t *mac_address; //uint8_t mac_address[MAC_ADDR_LENGTH];
+	  const uint8_t *mac_address; //uint8_t mac_address[MAC_ADDR_LENGTH];
 	  ip_addr_t cfg_ipaddr;
 	  ip_addr_t cfg_netmask;
 	  ip_addr_t cfg_gw;
@@ -132,21 +138,21 @@ void tcpip_stack_init(void)
 	    //extern uint8_t _cfg_local_ipe[ADDR_LENGTH];
 	    //extern uint8_t _cfg_local_gwe[ADDR_LENGTH];
 	    //extern uint8_t _cfg_local_maske[ADDR_LENGTH];
-		uint8_t *dev;
+		const uint8_t *dev;
 		#if LWIP_IPV4 && LWIP_IPV6
 		dev = lwip_get_ip_addresse();
 	    IP4_ADDR(&cfg_ipaddr.u_addr.ip4, dev[0], dev[1], dev[2], dev[3]);
-		dev = lwip_get_mask_addresse();
-	    IP4_ADDR(&cfg_netmask.u_addr.ip4, dev[0], dev[1], dev[2], dev[3]);
 		dev = lwip_get_qw_addresse();
 	    IP4_ADDR(&cfg_gw.u_addr.ip4, dev[0], dev[1], dev[2], dev[3]);
+		dev = lwip_get_mask_addresse();
+	    IP4_ADDR(&cfg_netmask.u_addr.ip4, dev[0], dev[1], dev[2], dev[3]);
 		#else
 		dev = lwip_get_ip_addresse();
 	    IP4_ADDR(&cfg_ipaddr, dev[0], dev[1], dev[2], dev[3]);
-		dev = lwip_get_mask_addresse();
-	    IP4_ADDR(&cfg_netmask, dev[0], dev[1], dev[2], dev[3]);
 		dev = lwip_get_qw_addresse();
 	    IP4_ADDR(&cfg_gw, dev[0], dev[1], dev[2], dev[3]);
+		dev = lwip_get_mask_addresse();
+	    IP4_ADDR(&cfg_netmask, dev[0], dev[1], dev[2], dev[3]);
 		#endif
 	  } while(0);
 	  #endif
@@ -186,9 +192,8 @@ void tcpip_stack_init(void)
 	  /*  When the netif is fully configured this function must be called.*/
 #if 1
 	//printf("Note: netif is fully configuration.s\r\n");
-	printf("  [Send ARP events, e.g. on link-up/netif-up or addr-change] but we think, only link-up or addr-chang IS enought!\r\n"); /** Send ARP/IGMP/MLD/RS events, e.g. on link-up/netif-up or addr-change */
-	  
-	  cleararpflag_netif_set_up(&xnetif[pin]); //has temp: xnetif[pin].flags &= ~NETIF_FLAG_ETHARP;
+	printf("  ! A[%d] [Send ARP events, e.g. on link-up/netif-up or addr-change] but we think, only link-up or addr-chang IS enought!\r\n", pin); /** Send ARP/IGMP/MLD/RS events, e.g. on link-up/netif-up or addr-change */  
+	cleararpflag_netif_set_up(&xnetif[pin]); //has temp: xnetif[pin].flags &= ~NETIF_FLAG_ETHARP;
 	  
 	//printf("Note: netif is fully configuration.e\r\n");
 #else
@@ -212,5 +217,12 @@ void tcpip_stack_init(void)
   #if 1
   xnetif[pin].flags &= ~NETIF_FLAG_LINK_UP; // prepare for '_netif_set_link_up_JJINITAndTimerUsed'
   #endif
+}
+
+void since_tcpip_stack_init(void)
+{
+  int pin = mstep_get_net_index();
+  printf("  ! B [Send ARP events, can then accepted, and do netif-up] but we think, here do re-init-config is also OK!\r\n"); /** Send ARP/IGMP/MLD/RS events, e.g. on link-up/netif-up or addr-change */
+  setarpflag_for_ever_netif_set_up(&xnetif[pin]);
 }
 #endif

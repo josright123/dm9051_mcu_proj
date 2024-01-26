@@ -37,8 +37,8 @@
  *
  */
 #include "lwip/opt.h"
-#include "dm9051_lw.h"
 #include "dm9051_lw_conf.h"
+#include "dm9051_lw.h"
 #include "lwip/mem.h"
 #include "netif/etharp.h"
 #include "ethernetif.h"
@@ -46,6 +46,7 @@
 #include "developer_conf.h"
 
 #include "netconf.h"
+#include "test/test_state.h" //driver also
 #include "testproc/testproc_lw.h"
 
 /* Network interface name */
@@ -79,7 +80,11 @@ u8 *get_eth_buff(void)
 }
 #endif
 
-void lwip_set_mac(uint8_t* macadd)
+static uint16_t drviver_init(void) {
+	return dm9051_init(mstep_eth_mac());
+}
+
+void lwip_set_mac(const uint8_t* macadd)
 {
   int i = mstep_get_net_index();
   tmpMACaddr[i][0] = macadd[0];
@@ -104,26 +109,19 @@ void lwip_get_mac(uint8_t *adr)
 
 void dm9051_init_nondual(void)
 {
-	//int i; //_n_verify_id = 0;
-
-	//printf(".dm9051_init_dual().s\r\n");
-	
 	//for (i = 0; i < ETHERNET_COUNT; i++) { //get_eth_interfaces()
-		uint8_t addr[6];
-		uint16_t id;
-		//i = mstep_get_net_index(); //mstep_set_net_index(i); //set_pin_code(i);
-		lwip_get_mac(addr);
-		//dm9051_poweron_rst();
-		//delay_ms(1);
-		id = dm9051_init(addr);
-		//_display_verify_chipid("dm9051_init", mstep_spi_conf_name(), id);
-		//_if (display_verify_chipid("dm9051_init", mstep_spi_conf_name(), id))
-		 if (check_chip_id(id))
-			 n_verify_id++;
 	//}
-	
-	//printf(".dm9051_init_dual().e\r\n");
-	
+
+	//uint8_t addr[6];
+	uint16_t id;
+	//lwip_get_mac(addr);
+	//id = dm9051_init(addr);
+
+	id = TRANS_CONN(drviver_init, UNIT_TRANS);
+
+	 if (check_chip_id(id))
+		 n_verify_id++;
+
 #if 0
 	do {
 	int pnc, j, k;
@@ -190,7 +188,7 @@ uint16_t dm9051_link_update_dual(void)
 	//for (i = 0; i < ETHERNET_COUNT; i++) { //get_eth_interfaces()
 		//mstep_set_net_index(i); //set_pin_code(i);
 	
-		updwn = dm9051_link_update(); // Current 'mstep_get_net_index' is OK.
+		updwn = dm9051_bmsr_update(); // Current 'mstep_get_net_index' is OK.
 		
 	  //printf("[dm9051_link_update_dual].dm9051_link_update[%d] = result %d\r\n", i, updwn);
 		
@@ -301,6 +299,11 @@ low_level_output(struct netif *netif, struct pbuf *p)
 	  len = dm9051_rx(buffer);
 	  if (!len)
 		  return NULL;
+
+#if 0
+//add.20240117.
+	  dm9051_rxlog_monitor_rx_all(2, buffer, len);
+#endif
 	  
 	  p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
 	  if (p)
@@ -322,7 +325,7 @@ low_level_output(struct netif *netif, struct pbuf *p)
 	  int l = 0;
 	  uint8_t *buffer = &EthBuff[0].rx; //Rx_Buff;
 
-	  len = dm9051_rx_dual(buffer); //dm9051_rx(.);
+	  len = dm9051_rx_dual(buffer); //_dm9051_rx(.);
 		
 	  if (!len)
 		  return NULL;

@@ -90,6 +90,9 @@
 #include "lwip/nd6.h"
 #endif
 
+//#include "dm9051_lw.h"
+#include "dm9051_lw_conf.h" //for _get_testplanlog().
+
 #if LWIP_NETIF_STATUS_CALLBACK
 #define NETIF_STATUS_CALLBACK(n) do{ if (n->status_callback) { (n->status_callback)(n); }}while(0)
 #else
@@ -204,7 +207,7 @@ netif_init(void)
 #endif /* LWIP_HAVE_LOOPIF */
 }
 
-#if 0
+#if 1
 #define nif_mul(p) (pt[0] & 0x01)
 #define nif_arp2me(p, ipadd) (p[12]==0x08 && p[13]==0x06 && \
 				   p[38]==192 && p[39]==168 && p[40]==1 && p[41]==37)  //(ipadd >> 24) & 0xff, ipadd & 0xff
@@ -252,7 +255,7 @@ static void nif_showpbuf(char *head, struct netif *netif, struct pbuf *p)
     }
 	printf("\r\n");
 
-    printf("[JJ]: netif.c: to-process, inp->flag %x & %x\r\n", netif->flags, (NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET));
+    printf("[JJ]: netif.c: to-process, inp->flag %02x & %02x\r\n", netif->flags, (NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET));
 }
 #endif
 
@@ -279,8 +282,9 @@ netif_input(struct pbuf *p, struct netif *inp)
   if (inp->flags & (NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET)) {
 	err_t res;
 
-	#if 0
-	nif_showpbuf("netif_input,rx-process", inp, p);
+	#if 1
+	if (get_testplanlog())
+		nif_showpbuf("netif_input,rx-process", inp, p);
 	#endif
 	  
 	res = ethernet_input(p, inp);
