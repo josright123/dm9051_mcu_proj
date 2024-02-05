@@ -794,7 +794,7 @@ void proc_alldone_reset(void)
 		nsr = cspi_read_reg(DM9051_NSR);
 		printf("... Start.s nsr %02x\r\n", nsr);
 	
-		ethernetif_reset_proc(); //dm9051_reset_process();
+		ethernetif_reset_proc();
 	
 		dm_delay_ms(10);
 		nsr = cspi_read_reg(DM9051_NSR);
@@ -807,11 +807,15 @@ void proc_alldone_reset(void)
    #endif
 #endif
 }
+	
+enable_t get_testplaninclude(void) {
+	return DM_FALSE;
+}
 
 void testmode_real(void)
 {
 #if LWIP_TESTMODE || LWIP_TESTMODE_REAL
-  //.set_testplanlog(TRUE); //set_dm9051opts_testplanlog(TRUE);
+  //.set_testplanlog(DM_TRUE); //set_dm9051opts_testplanlog(DM_TRUE);
   if (get_testplaninclude())
 	proc_testing();
   
@@ -819,7 +823,7 @@ void testmode_real(void)
 	  //if. Davicom (can RST such way!)
 	  proc_alldone_reset();
 	  /*
-	   * dm9051_reset_process(void) proc_alldone_reset().
+	   * ethernetif_reset_proc() proc_alldone_reset().
 	   */
   #else
 	  //else. CH390 (can not as RST above way!)
@@ -909,7 +913,7 @@ void periodic_loop(void)
 			mstep_set_net_index(i);
 			
 			#if 1 //[debug rxwp]
-			if (get_testplanlog())
+			if (get_testplanlog(test_plan_log))
 				in_ingress_monitor();
 			#endif
 			

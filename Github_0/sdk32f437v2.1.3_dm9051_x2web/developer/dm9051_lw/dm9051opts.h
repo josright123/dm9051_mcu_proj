@@ -14,8 +14,8 @@
 //#include "at32f415_board.h"
 //#include "at32f435_437_board.h"
 
-#include "at32f435_437_board.h" //mcu's board 
-#include "at32f435_437_clock.h" //Also mcu's clock 
+#include "at32f435_437_board.h" //mcu's board
+#include "at32f435_437_clock.h" //Also mcu's clock
 
 /*
  * dm9051_declaration_support
@@ -37,10 +37,6 @@
 #define NON_CHIPID_STOP							1 //0 //0 // stop
 #define VER_CHIPID_ONLY							0 //1 //0
 
-/* [Network Config] */
-#define MAC_ADDR_LENGTH                  		(6)
-#define ADDR_LENGTH                      		(4)
-
 /*
  * dm9051_debug_mode selection
  */
@@ -50,67 +46,68 @@
 
 //tobe dm9051_api.c api
 //tobe dm9051opts.c internal
-#define HELLO_DRIVER_OPTS_DISPLAY_API			1 //0
-#define HELLO_DRIVER_INTERNAL					1 //To support for being called by the program code from outside this dm9051_lw driver.
-
 //
-// [This HELLO_DRIVER_INTERNAL compiler option, is for a diagnostic purpose while the program code is to use this dm9051_lw driver.]
+// [This _HELLO_DRIVER_INTERNAL compiler option, is for a diagnostic purpose while the program code is to use this dm9051_lw driver.]
 // [Must be 1, for dm9051_lw driver operating.]
 // [Set to 0, for the program code to observ the using APIs of dm9051_lw driver, before add the dm9051_lw driver implement files.]
 //
+#define HELLO_DRIVER_OPTS_DISPLAY_API			1 //0
+#define HELLO_DRIVER_INTERNAL					1 //To support for being called by the program code from outside this dm9051_lw driver.
+
 #if HELLO_DRIVER_INTERNAL
 
-/* extern */
-#define EXTERN_FUNCTION(rtype, field) \
-	rtype dm9051opts_##rtype##field(void); \
-	char *dm9051opts_desc##field(void)
-#define IS_FUNCTION(rtype, field) \
-	EXTERN_FUNCTION(rtype, field)
+typedef enum {
+  DM_FALSE = 0,
+  DM_TRUE = !DM_FALSE,
+} enable_t;
 
-/* definition for extern short-call-name */
-#define IS_INSTEAD(rtype, field)	dm9051opts_##rtype##field
-#define OPTS_DATA(rtype, field)		dm9051opts_##rtype##field
+typedef enum {
+  CS_EACH = 0,
+  CS_LONG,
+} csmode_t;
 
-/* declaration */
-#define IS_DECL_FUNCTION(rtype, field) \
-rtype dm9051opts_##rtype##field(void) { \
-	return dm9051optsex[mstep_get_net_index()].##field; \
-}									\
-char *dm9051opts_desc##field(void) { \
-	return dm9051optsex[mstep_get_net_index()].desc##field##; \
-}
+typedef enum {
+  NCR_RST_DEFAULT = 0,
+  NCR_FORCE_100MF,
+  NCR_AUTO_NEG,
+} ncrmode_t;
 
-/* sub-extern */
-#define EXTERN_SG_FUNCTION(rtype, field) /* SET and HET */ \
-	rtype dm9051opts_get##rtype##field(void); \
-	void dm9051opts_set##rtype##field(rtype value)
-#define SG_FUNCTION(rtype, field) \
-	EXTERN_SG_FUNCTION(rtype, field)
-/* sub */
-#define DECL_SG_FUNCTION(rtype, field) \
-rtype dm9051opts_get##rtype##field(void) { \
-	return dm9051optsex[mstep_get_net_index()].##field; \
-} \
-void dm9051opts_set##rtype##field(rtype value) { \
-	dm9051optsex[mstep_get_net_index()].##field = value; \
-}
-/* definition for extern short-call-name */
-#define IS_GET_INSTEAD(rtype, field)	dm9051opts_get##rtype##field
-#define IS_SET_INSTEAD(rtype, field)	dm9051opts_set##rtype##field
+	#if 0
+	/* sub-extern *//* SET and GET */
+	/*#define SG_FUNCTION(rtype, field) \
+		rtype dm9051opts_get##rtype##field(void); \
+		void dm9051opts_set##rtype##field(rtype value)*/
+
+	/* sub *//* SET and GET */
+	/*#define DECL_SG_FUNCTION(rtype, field) \
+	rtype dm9051opts_get##rtype##field(void) { \
+		return dm9051optsex[mstep_get_net_index()].##field; \
+	} \
+	void dm9051opts_set##rtype##field(rtype value) { \
+		dm9051optsex[mstep_get_net_index()].##field = value; \
+	}*/
+	#endif
+
 #endif //HELLO_DRIVER_INTERNAL
+
+/* [Network Config] */
+#define MAC_ADDR_LENGTH                  		(6)
+#define ADDR_LENGTH                      		(4)
 
 //------------------
 
 //dm9051opts.c
-#if HELLO_DRIVER_OPTS_DISPLAY_API
 void GpioDisplay(void);
+void dm9051_options_display(void);
+
+#if HELLO_DRIVER_OPTS_DISPLAY_API
 void ethcnt_ifdiplay_iomode(void);
 void ethcnt_ifdiplay(void);
 #endif
 
+//void first_log_clear(int i);
 void first_log_init(void);
 u8 first_log_get(int i);
-//void first_log_clear(int i);
 
 //------------------
 

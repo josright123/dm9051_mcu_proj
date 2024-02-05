@@ -269,6 +269,37 @@ void process_txlog_debug(uint8_t *buffer, int len) {
   dm9051_txlog_disp(buffer, len);
 }
 
+void low_level_output_test(void) {
+  uint8_t *buffer = &EthBuff[0].tx; //Tx_Buff;
+  int l;
+
+  for (l = 0; l < 512; l++)
+	buffer[l] = (uint8_t) l;
+	
+	buffer[0] = 0x08;
+	buffer[1] = 0x97;
+	buffer[2] = 0x98;
+	buffer[3] = 0xc3;
+	buffer[4] = 0xb9;
+	buffer[5] = 0xa2;
+	
+	buffer[6] = 0x00;
+	buffer[7] = 0x60;
+	buffer[8] = 0x6e;
+	buffer[9] = 0x00;
+	buffer[10] = 0x01;
+	buffer[11] = 0x17;
+	
+	buffer[12] = 0x08;
+	buffer[13] = 0x00;
+
+  for (l = 42; l <= 512; l++) {
+	dm9051_tx_dual(buffer, (uint16_t) l); //dm9051_tx(.);
+	if (!OPT_CONFIRM(tx_endbit))
+		dm_delay_ms(1);
+  }
+}
+
 static err_t
 low_level_output(struct netif *netif, struct pbuf *p)
 {
@@ -281,7 +312,7 @@ low_level_output(struct netif *netif, struct pbuf *p)
     memcpy((u8_t*)&buffer[l], q->payload, q->len);
     l = l + q->len;
   }
-  dm9051_tx_dual(buffer, (uint16_t) l); //dm9051_tx(.);
+  dm9051_tx_dual(buffer, (uint16_t) l); //dm9051_;tx(.);
   
   process_txlog_debug(buffer, l);
   
@@ -299,11 +330,6 @@ low_level_output(struct netif *netif, struct pbuf *p)
 	  len = dm9051_rx(buffer);
 	  if (!len)
 		  return NULL;
-
-#if 0
-//add.20240117.
-	  dm9051_rxlog_monitor_rx_all(2, buffer, len);
-#endif
 	  
 	  p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
 	  if (p)
@@ -314,6 +340,33 @@ low_level_output(struct netif *netif, struct pbuf *p)
 		  l = l + q->len;
 		}
 	  }
+
+	  do {
+	   #define ETHERNETIF_LOW_LEVEL_DBG	0
+	   #if ETHERNETIF_LOW_LEVEL_DBG
+		  static int showtot = 0, showi = 0;
+		  static uint16_t showlen[16];
+	   #endif
+	   #if ETHERNETIF_LOW_LEVEL_DBG
+		 printf("rx.%4d ", len);
+		 showlen[showi++] = len;
+		 if (!(showi %16)) {
+			 int i;
+			 showtot += 16;
+			 printf("\r\n");
+
+			 printf("\r\n[ ");
+			 for (i= 0; i < showi; i++)
+				printf(".%4x ", showlen[i]);
+			 printf(" ] showntot %d\r\n", showtot);
+			 showi = 0;
+		 }
+	   #endif
+	   #if 0
+		//add.20240117.
+		 dm9051_rxlog_monitor_rx_all(2, buffer, len);
+	   #endif
+	  } while(0);
 	  return p;
 	}
 
@@ -544,5 +597,5 @@ void ethernetif_line7_proc(void) {
 #endif
 
 void ethernetif_reset_proc(void) {
-	dm9051_reset_process();
+	hdlr_reset_process(DM_TRUE); //(OPT_CONFIRM(hdlr_confrecv));
 }

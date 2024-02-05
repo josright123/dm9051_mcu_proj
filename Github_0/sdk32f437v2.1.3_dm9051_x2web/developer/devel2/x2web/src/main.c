@@ -96,6 +96,9 @@ void time_update(void)
   __IO uint32_t time_cnt = 0;
 #endif
 	
+void set_testplanlog(enable_t flag) {
+}
+	
 /**
   * @brief  main function.
   * @param  none
@@ -110,7 +113,9 @@ int main(void)
   bannerline();
   bannerline();
   printf("x2web start: [BOARD_SPI COUNT] %d  /  Operating: [ETHERNET COUNT] %d\r\n", BOARD_SPI_COUNT, ETHERNET_COUNT);
-	
+
+  dm9051_options_display();
+
   dm9051_boards_initialize(); //at32_dm9051_initialize();
   ethcnt_ifdiplay_iomode();
 
@@ -119,10 +124,10 @@ int main(void)
   tmr_init(); //Used for link-down/link-up check, to be the init(s) latest-one !!
   netlink_spring_wait();
 
-  set_testplanlog(TRUE); //sel TRUE to have log for rx and lwip input flow
+  set_testplanlog(DM_TRUE); //sel DM_TRUE to have log for rx and lwip input flow
   testmode_real();
-
-  set_testplanlog(FALSE); //set_dm9051opts_testplanlog(FALSE);  
+  set_testplanlog(DM_FALSE); //set_dm9051opts_testplanlog(DM_FALSE);  
+  
   if (!OPT_CONFIRM(rxtypemode)) { //== (isrxtype_test())
 	  printf("...................... plan a rx type test rx mode .......................\r\n");
 	  testing_loop();
@@ -132,7 +137,7 @@ int main(void)
   lwip_reinitialize();
   tasks_mach_reinit(); //net->cbf = cb;
   lwip_app_init();
-  
+ low_level_output_test();
   proc_runs();
 }
 

@@ -6,15 +6,29 @@
 
 u8 gfirst_log[ETHERNET_COUNT];
 
-#if HELLO_DRIVER_OPTS_DISPLAY_API
-	void GpioDisplay(void) {
-	  int i;
-	  for (i = 0; i < ETHERNET_COUNT; i++) {
-		mstep_set_net_index(i);
-		printf("@%s, %s, %s\r\n", mstep_conf_info(), mstep_conf_cpu_spi_ethernet(), mstep_conf_cpu_cs_ethernet());
-	  }
-	}
+void GpioDisplay(void) {
+  int i;
+  for (i = 0; i < ETHERNET_COUNT; i++) {
+	mstep_set_net_index(i);
+	printf("@%s, %s, %s\r\n", mstep_conf_info(), mstep_conf_cpu_spi_ethernet(), mstep_conf_cpu_cs_ethernet());
+  }
+}
 
+void dm9051_options_display(void)
+{
+	int i;
+	GpioDisplay();
+	for (i = 0; i< ETHERNET_COUNT; i++) {
+		mstep_set_net_index(i);
+		bannerline_log();
+		printf("dm9051[%d]_options_display:\r\n", mstep_get_net_index());
+		printf(" - core rst mode, %s\r\n", dm9051opts_descgeneric_core_rst());
+		printf(" - tx_endbit mode, %s\r\n", dm9051opts_desctx_endbit());
+		//..
+	}
+}
+
+#if HELLO_DRIVER_OPTS_DISPLAY_API
 	void ethcnt_ifdiplay_iomode(void)
 	{
 		int i;

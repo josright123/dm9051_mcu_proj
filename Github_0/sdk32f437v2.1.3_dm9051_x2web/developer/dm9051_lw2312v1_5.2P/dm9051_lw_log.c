@@ -515,7 +515,10 @@ void dm9051_txlog_monitor_tx_all(int hdspc, const uint8_t *buffer, size_t len)
 		heads = (char *) malloc(HEAD_LEN); // note: memory allocation WITH <stdlib.h>!
 		  n = sprintf(heads, "%d/%d", tx_all_modle_keep.allow_num, tx_all_modle.allow_num);
 		  sprintf(heads, "%d/%d tx[%d]>>", tx_all_modle_keep.allow_num, tx_all_modle.allow_num, mstep_get_net_index());
+		
+		  bannerline_log();
 		  function_monitor_tx_all(hdspc, n, heads, buffer, len);
+		
 		free(heads);
 	}
 }

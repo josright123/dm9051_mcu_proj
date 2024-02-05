@@ -22,8 +22,9 @@ typedef struct {
 } intr_paramfull_t;*/
 
 #if 0 //[Test]
+	/*
 	typedef struct spi_pack_st {
-		char *cpu_api_info;	//cpu name is for the purpose to lead the pins, for easy recogition!
+		char *cpu_spi_info;	//cpu name is for the purpose to lead the pins, for easy recogition!
 		spihead_t spidef;
 		gpio_t wire_sck;
 		gpio_t wire_mi;
@@ -80,6 +81,7 @@ typedef struct {
 		//
 	};
 	#endif
+	*/
 #endif
 	
 #if 0
@@ -214,16 +216,16 @@ typedef struct gpio_sel_st {
 	gpio_mux_sel_type muxsel;
 } gpio_t;
 
-typedef struct gp_set_st {
-	const char *gp_info;	
-	const gpio_t gp;
-} gp_set_t;
-
-typedef struct extline_st {
-	crm_periph_clock_type intr_crm_clk; //CRM_GPIOC_PERIPH_CLOCK,
-	uint32_t extline; //= LINE
-	IRQn_Type irqn; //= EXINTn_m
-} extline_t;
+typedef struct {
+	char *info;
+	spihead_t spidef;
+	char *cpu_spi_info;	//cpu name is for the purpose to lead the pins, for easy recogition!
+	gpio_t wire_sck;
+	gpio_t wire_mi;
+	gpio_t wire_mo;
+	char *cpu_cs_info;
+	gpio_t wire_cs;
+} spi_dev_t;
 
 typedef struct extint_init_st {
 	crm_periph_clock_type scfg_clk;
@@ -236,31 +238,36 @@ typedef struct extint_init_st {
 #endif
 } extint_init_t;
 
-typedef struct {
-	char *cpu_api_info;	//cpu name is for the purpose to lead the pins, for easy recogition!
-	spihead_t spidef;
-	gpio_t wire_sck;
-	gpio_t wire_mi;
-	gpio_t wire_mo;
-	gpio_t wire_cs;
-} spi_dev_t;
+typedef struct extline_st {
+	crm_periph_clock_type intr_crm_clk; //CRM_GPIOC_PERIPH_CLOCK,
+	uint32_t extline; //= LINE
+	IRQn_Type irqn; //= EXINTn_m
+} extline_t;
 
 struct extscfg_st { //struct linescfg_st
 	const char *irq_enable_inf;	
 	extline_t extline;
 };
 
+typedef struct gp_set_st {
+	const char *gp_info;	
+	const gpio_t gp;
+} gp_set_t;
+
 struct modscfg_st {
 	const char *scfg_inf;	
-	extint_init_t scfg_init;
+	struct extint_init_st scfg_init; //extint_init_t
 	struct extscfg_st *extend; //struct linescfg_st *extend; //essential
-	gp_set_t *option;
+	struct gp_set_st *option; //gp_set_t
 };
+
+// -
 
 typedef struct {
 	char *set_name;
 	
-	confirm_state test_plan_log;
+	confirm_state test_plan_include; //whether run test_plan fnc!
+	confirm_state test_plan_log; //log when test_plan func, WE also use in x2web project.
 	
 	uint8_t iomode;
 	char *desciomode;
@@ -282,3 +289,51 @@ typedef struct {
 	confirm_state flowcontrolmode; //flow_control mode
 	char *descflowcontrolmode;
 } optsex_t;
+
+/* Sanity2.
+ */
+#ifndef AT32F437xx
+//#define scfg_exint_system_ready			0
+//#define gpio_mux_sel_type_system_declaration	0
+#else
+//#define scfg_exint_system_ready			1
+//#define gpio_mux_sel_type_system_declaration	1
+#endif
+
+/* Sanity3.
+ */
+#ifndef AT32F437xx
+/**
+  * @purpose make sure to have 'gpio_mux_sel_type'
+  * @brief  gpio muxing function selection type (ARTRRY start to support found in AT32F437)
+  * @brief  define to declare while if system header files not defined.
+  */
+typedef enum
+{
+  GPIO_MUX_0                             	= 0x00, /*!< gpio muxing function selection 0 */
+  GPIO_MUX_1                             	= 0x01, /*!< gpio muxing function selection 1 */
+  GPIO_MUX_2                             	= 0x02, /*!< gpio muxing function selection 2 */
+  GPIO_MUX_3                             	= 0x03, /*!< gpio muxing function selection 3 */
+  GPIO_MUX_4                             	= 0x04, /*!< gpio muxing function selection 4 */
+  GPIO_MUX_5                             	= 0x05, /*!< gpio muxing function selection 5 */
+  GPIO_MUX_6                             	= 0x06, /*!< gpio muxing function selection 6 */
+  GPIO_MUX_7                             	= 0x07, /*!< gpio muxing function selection 7 */
+  GPIO_MUX_8                             	= 0x08, /*!< gpio muxing function selection 8 */
+  GPIO_MUX_9                             	= 0x09, /*!< gpio muxing function selection 9 */
+  GPIO_MUX_10                            	= 0x0A, /*!< gpio muxing function selection 10 */
+  GPIO_MUX_11                            	= 0x0B, /*!< gpio muxing function selection 11 */
+  GPIO_MUX_12                            	= 0x0C, /*!< gpio muxing function selection 12 */
+  GPIO_MUX_13                            	= 0x0D, /*!< gpio muxing function selection 13 */
+  GPIO_MUX_14                            	= 0x0E, /*!< gpio muxing function selection 14 */
+  GPIO_MUX_15                            	= 0x0F  /*!< gpio muxing function selection 15 */
+} gpio_mux_sel_type;
+#endif
+
+/* Sanity5. def
+ */
+//#define NULL_CRMCLK (crm_periph_clock_type)	0
+//#define NULL_PINSRC (gpio_pins_source_type)	0
+//#define NULL_MUXSEL (gpio_mux_sel_type)		0
+
+#define GPIO_PINSRC_NULL (gpio_pins_source_type) 0
+#define GPIO_MUX_NULL    (gpio_mux_sel_type)	 0

@@ -47,7 +47,7 @@ void threads_support(void)
 .	//SET_LINK_TIME(0); //."linkup_process"
 .	if (all_local_time >= MQTT_CLIENT_PUBLISH_MS) { //."linkup_process" for only not during startup.
 .		//SET_LINK_TIME(all_local_time - MQTT_CLIENT_PUBLISH_MS + NZEND_NUM_MS);
-.		dm9051_reset_process();
+.		ethernetif_reset_proc();
 .	}
 .}
 #endif

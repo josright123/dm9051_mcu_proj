@@ -358,7 +358,7 @@ void debug_tx(const uint8_t *buf, uint16_t len)
 #endif
 }
 
-void debug_rx(const uint8_t *buf, uint16_t len)
+int debug_rx(const uint8_t *buf, uint16_t len)
 {
 #if 0
   static int icmp_count_rx = 0;
@@ -369,7 +369,7 @@ void debug_rx(const uint8_t *buf, uint16_t len)
 	
   if (IsMulticast(buf)) { 
     if (IS_ARP)
-		return;
+		return 0;
 	
 	if (IS_DHCPRX) {
 		printf("Receive DHCP pkt (%02x:%02x:%02x:%02x:%02x:%02x) len %d ---------------\r\n", 
@@ -381,7 +381,7 @@ void debug_rx(const uint8_t *buf, uint16_t len)
 		printf("Your client ID: %d.%d.%d.%d\r\n", buf[0x3a], buf[0x3b], buf[0x3c], buf[0x3d]); //0x3a = 58
 		printf("\r\n");
 	#endif
-		return;
+		return 0;
 	}
 
 #if 0
@@ -393,7 +393,7 @@ void debug_rx(const uint8_t *buf, uint16_t len)
 					rx_mult_tcp_count, buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
 				function_monitor_rx(buf, len);
 			}
-			return;
+			return 0;
 		}
 		if (IS_UDP) {
 			if (rx_mult_udp_count < 3) {
@@ -402,24 +402,24 @@ void debug_rx(const uint8_t *buf, uint16_t len)
 					rx_mult_udp_count, buf[0],buf[1],buf[2],buf[3],buf[4],buf[5], "TBD", IPBUF->proto);
 				function_monitor_rx(buf, len);
 			}
-			return;
+			return 0;
 		}
 			
 		printf("Receive Multicast and OP: (%02x:%02x:%02x:%02x:%02x:%02x) ? ---------------\r\n", 
 			buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
 		function_monitor_rx(buf, len);
-		return;
+		return 0;
 	}
 	
 	printf("Receive Multicast and UNKNOW Multicast packet: (%02x:%02x:%02x:%02x:%02x:%02x) ---------------\r\n", 
 				buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
 	//function_monitor_rx_all(buf, len);
 #endif
-	return;
+	return 0;
   }
   
   if (IS_ARP)
-	return; //uni-cast arp
+	return 0; //uni-cast arp
  
   if (IS_ICMP) {
 #if 0
@@ -429,7 +429,7 @@ void debug_rx(const uint8_t *buf, uint16_t len)
 			function_monitor_rx(buf, len);
 		}
 #endif
-		return;
+		return 0;
   }
   
   if (IS_IP) {
@@ -442,7 +442,7 @@ void debug_rx(const uint8_t *buf, uint16_t len)
 						IPBUF->proto, HTONS(TCPBUF->destport), len, master_TCP_count);
 				function_monitor_rx(HEAD_SPC, buf, len);
 			}
-			return;
+			return 0;
 		}
 	}
 #if 0
@@ -454,18 +454,19 @@ void debug_rx(const uint8_t *buf, uint16_t len)
 		printf("Receive unit-cast pkt. Protocol: %s (%d) ---------------\r\n", "TBD", IPBUF->proto);
 	function_monitor_rx(buf, len);
 #endif
-	return;
+	return 0;
   }
   
   printf("Receive unit-cast UNKNOW pkt ---------------\r\n");
   function_monitor_rx(HEAD_SPC, buf, len); //(buffer, l);
+  return 1; //err
 }
 
 //void dm9051_log_dump0(char *prefix_str, size_t tlen, const void *buf, size_t len)
 //{
 //	int rowsize = 32;
 //	int seg_start = 0;
-//	sprint_hex_dump0(HEAD_SPC, 0, prefix_str, tlen, rowsize, buf, seg_start, len, FALSE);
+//	sprint_hex_dump0(HEAD_SPC, 0, prefix_str, tlen, rowsize, buf, seg_start, len, DM_FALSE);
 //}
 
 void dm9051_txlog_monitor_tx(int hdspc, const uint8_t *buffer, size_t len)
@@ -523,9 +524,21 @@ void dm9051_txlog_monitor_tx_all(int hdspc, const uint8_t *buffer, size_t len)
 	}
 }
 
+uint16_t unitcast_UNKNOW_pkt = 0;
+
+void debug_rx_inc_count(void) {
+	unitcast_UNKNOW_pkt++;
+}
+void debug_rx_display_count(void) {
+	#if 1
+	printf("d (... unitcast_UNKNOW_pkt: %d / function_monitor_rx_all ...)\r\n", unitcast_UNKNOW_pkt);
+	#endif
+}
+
 void dm9051_rxlog_monitor_rx_all(int hdspc, const uint8_t *buffer, size_t len)
 {
 	function_monitor_rx_all(hdspc, NULL, buffer, len);
+	//.debug_rx_display_count(); NOT here~
 }
 
 void dm9051_txlog_disp(uint8_t *buffer, int len)
@@ -539,18 +552,26 @@ void dm9051_rxlog_arp(void *payload, uint16_t tot_len, uint16_t len)
 {
 #if DM9051_DEBUG_ENABLE
   if (tot_len == LEN64) {
-	if (DBG_IS_ARP(payload))
+	if (DBG_IS_ARP(payload)) {
+	
+	#if 0 //tobe-used~
+		printf("\r\n");
+		printf("[%d]\r\n", 5); //part = 5.
+
 		printf(" rx,(such as 'ARP')\r\n"); //no-need show. such as 'ARP'
-	else if (DBG_IS_TCP(payload))
-		//printf(" rx,(such as 'ACK')\r\n"); //no-need show. such as 'ACK'
+		debug_rx_display_count(); //Put here~
+		bannerline_log();
+	#endif
+
+	}
+	#if 0
+	else if (DBG_IS_TCP(payload)) //printf(" rx,(such as 'ACK')\r\n"); //no-need show. such as 'ACK'
 		printf(" rx,(debug do process such as 'ACK')\r\n");
 	else
 		printf(" rx,(tiny LEN64)\r\n");
-  } else
-	printf(" netif_input,rx (tot_len %u)\r\n", tot_len);
-	
-  /* To trace */
-  debug_rx(payload, len); //ok. only 1st-pbuf
+	#endif
+  } //else
+	//printf(" netif_input,rx (tot_len %u)\r\n", tot_len);
 #endif
 }
 

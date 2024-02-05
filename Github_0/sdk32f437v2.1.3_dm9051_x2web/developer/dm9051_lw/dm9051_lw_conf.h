@@ -32,25 +32,14 @@
 
 //tobe dm9051opts.c
 //
-// [This HELLO_DRIVER_INTERNAL compiler option, is for a diagnostic purpose while the program code is to use this dm9051_lw driver.]
+// [This _HELLO_DRIVER_INTERNAL compiler option, is for a diagnostic purpose while the program code is to use this dm9051_lw driver.]
 // [Must be 1, for dm9051_lw driver operating.]
 // [Set to 0, for the program code to observ the using APIs of dm9051_lw driver, before add the dm9051_lw driver implement files.]
 //
 #if HELLO_DRIVER_INTERNAL //To support for being called by the program code from outside this dm9051_lw driver.
 
-typedef enum { 
-  CS_EACH = 0,
-  CS_LONG,
-} csmode_t;
-
-typedef enum { 
-  NCR_RST_DEFAULT = 0,
-  NCR_FORCE_100MF,
-  NCR_AUTO_NEG,
-} ncrmode_t;
-
-//void set_dm9051opts_testplanlog(confirm_state test_log);
-//confirm_state get_dm9051opts_testplanlog(void);
+//void set_dm9051opts_testplanlog(enable_t test_log);
+//enable_t get_dm9051opts_testplanlog(void);
 
 //uint8_t dm9051opts_iomode(void); // Driver's laydr2 control, for multi-spi-cards. depend on your definition of '_BOARD_SPI_COUNT'
 //char *dm9051opts_desciomode(void);
@@ -65,39 +54,42 @@ typedef enum {
 
 //-
 
-SG_FUNCTION(confirm_state, test_plan_include);
-SG_FUNCTION(confirm_state, test_plan_log);
+//#define OPTS_FUNC_EXT
+//#undef OPTS_FUNC_EXT
+	#if 0
+	/*#define DM_FUNC(rtype, field) \
+		dm9051opts_##rtype##field()
 
-IS_FUNCTION(uint8_t, iomode);
-IS_FUNCTION(uint8_t, promismode);
-IS_FUNCTION(csmode_t, csmode);
-IS_FUNCTION(ncrmode_t, ncrmode);
-IS_FUNCTION(confirm_state, rxtypemode);
-IS_FUNCTION(confirm_state, flowcontrolmode); //confirm_state
-IS_FUNCTION(confirm_state, rxmode_checksum_offload); //confirm_state
-IS_FUNCTION(confirm_state, onlybytemode);
+	#define DM_MACRO(rtype, field) \
+		rtype dm9051opts_##rtype##field(void); \
+		char *dm9051opts_desc##field(void);*/
+	#endif
+	
+#define DM_TYPE		0
+#include "dm_types.h"
 
-#define get_testplaninclude			IS_GET_INSTEAD(confirm_state, test_plan_include) //only get is documented export!
-#define get_testplanlog				IS_GET_INSTEAD(confirm_state, test_plan_log)
-#define set_testplanlog				IS_SET_INSTEAD(confirm_state, test_plan_log)
-
-//#define OPTS_DATA(type,name)		IS_INSTEAD(type,name)
 /*
  * Below access to OPTs data:
  */
-#define OPT_U8(name)				OPTS_DATA(uint8_t, name)() //appcall
-#define OPT_CS(name)				OPTS_DATA(csmode_t, name)() //appcall
-#define OPT_NCR(name)				OPTS_DATA(ncrmode_t, name)() //appcall
-#define OPT_CONFIRM(name)			OPTS_DATA(confirm_state, name)() //appcall (define isonlybytemode(), or OPT_CONFIRM(onlybytemode))
+//#define IS_GET_INSTEAD(rtype, field)	dm9051opts_get##rtype##field /* definition for extern short-call-name */
+//#define IS_SET_INSTEAD(rtype, field)	dm9051opts_set##rtype##field
+//#define get_testplaninclude			IS_GET_INSTEAD(enable_t, test_plan_include) //only get is documented export!
+//#define set_testplanlog				IS_SET_INSTEAD(enable_t, test_plan_log)
+//#define get_testplanlog				IS_GET_INSTEAD(enable_t, test_plan_log)=
+#define get_testplanlog(name)			DM_FUNC(enable_t, name)
+#define OPT_U8(name)					DM_FUNC(uint8_t, name) //appcall
+#define OPT_CS(name)					DM_FUNC(csmode_t, name) //appcall
+#define OPT_NCR(name)					DM_FUNC(ncrmode_t, name) //appcall
+#define OPT_CONFIRM(name)				DM_FUNC(enable_t, name) //appcall (define isonlybytemode(), or OPT_CONFIRM(onlybytemode))
 
 //#define u8iomode					OPTS_DATA(uint8_t, iomode)
 //#define u8promismode				OPTS_DATA(uint8_t, promismode)
 //#define enum_csmode				OPTS_DATA(csmode_t, csmode) //dm9051opts_csmode_tcsmode
 //#define enum_ncrmode				OPTS_DATA(ncrmode_t, ncrmode)
-//#define isrxtype_test				!OPTS_DATA(confirm_state, rxtypemode)
-//#define isrxtype_run				OPTS_DATA(confirm_state, rxtypemode)
-//#define isflowcontrolmode			OPTS_DATA(confirm_state, flowcontrolmode)
-//#define isrxmode_checksum_offload	OPTS_DATA(confirm_state, rxmode_checksum_offload)
+//#define isrxtype_test				!OPTS_DATA(enable_t, rxtypemode)
+//#define isrxtype_run				OPTS_DATA(enable_t, rxtypemode)
+//#define isflowcontrolmode			OPTS_DATA(enable_t, flowcontrolmode)
+//#define isrxmode_checksum_offload	OPTS_DATA(enable_t, rxmode_checksum_offload)
 
 //int is_dm9051_board_irq(void);
 

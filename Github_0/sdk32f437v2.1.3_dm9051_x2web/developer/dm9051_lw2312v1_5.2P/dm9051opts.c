@@ -11,6 +11,28 @@
 u8 gfirst_log[ETHERNET_COUNT];
 #endif
 
+void GpioDisplay(void) {
+  int i;
+  for (i = 0; i < ETHERNET_COUNT; i++) {
+	mstep_set_net_index(i);
+	printf("@%s, %s, %s\r\n", mstep_conf_onfo(), mstep_conf_cpu_spi_ethernet(), mstep_conf_cpu_cs_ethernet());
+  }
+}
+
+void ethcnt_ifdiplay_chipmac(void)
+{
+	int i;
+	//.bannerline_log();
+	for (i = 0; i< ETHERNET_COUNT; i++) {
+		uint8_t buf[6];
+		mstep_set_net_index(i);
+	
+		//part par
+		cspi_read_regs(DM9051_PAR, buf, 6, csmode()); //dm9051opts_csmode_tcsmode()
+		printf("chip-bare-mac[%d] %02x%02x%02x%02x%02x%02x\r\n", i, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+	}
+}
+
 void ethcnt_ifdiplay_iomode(void)
 {
 	int i;
@@ -71,20 +93,6 @@ void ethcnt_ifdiplay_iomode(void)
 	}
 }
 
-void ethcnt_ifdiplay_chipmac(void)
-{
-	int i;
-	//.bannerline();
-	for (i = 0; i< ETHERNET_COUNT; i++) {
-		uint8_t buf[6];
-		mstep_set_net_index(i);
-	
-		//part par
-		cspi_read_regs(DM9051_PAR, buf, 6, csmode()); //dm9051opts_csmode_tcsmode()
-		printf("chip-bare-mac[%d] %02x%02x%02x%02x%02x%02x\r\n", i, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-	}
-}
-
 void ethcnt_ifdiplay(void)
 {
 #if 0
@@ -94,8 +102,6 @@ void ethcnt_ifdiplay(void)
 		NetifDisplay(i);
 		EepromDisplay(i);
 	}
-	//NetifDisplay(0); // [log]
-	//NetifDisplay(1); // [log]
 #endif
 }
 
@@ -110,10 +116,13 @@ void first_log_init(void)
 
 u8 first_log_get(int i)
 {
-	return gfirst_log[i];
+	u8 if_log = 
+		gfirst_log[i];
+	gfirst_log[i] = 0; //first_log_clear(i);
+	return if_log;
 }
 
-void first_log_clear(int i)
-{
-	gfirst_log[i] = 0;
-}
+//void first_log_clear(int i)
+//{
+//	gfirst_log[i] = 0;
+//}

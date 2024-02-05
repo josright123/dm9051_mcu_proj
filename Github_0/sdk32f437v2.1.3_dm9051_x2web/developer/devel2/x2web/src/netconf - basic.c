@@ -234,7 +234,7 @@ do {
     if (chip_link_up && first_2rst_timer1500_2cnnt2initpub == 0) {
 #if (LWIP_TESTMODE == 0)
 		//first_link_coerce_timer_trigger:
-		ethernetif_reset_proc(); //dm9051_reset_process();
+		ethernetif_reset_proc();
 #endif
 		first_2rst_timer1500_2cnnt2initpub = 1;
     }

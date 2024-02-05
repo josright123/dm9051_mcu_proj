@@ -26,14 +26,24 @@
   **************************************************************************
   */
 #include "dm9051_lw_conf.h"
-#include "dm9051_lw_conf_types.h"
 
+#include "dm9051_lw_conf_types.h"
 #include "dm9051_lw_conf_data.h" //1.yicheng
 //#ifdef AT32F437xx
 //#include "dm9051_lw_conf_at437x2spi.h" //1.yicheng
 //#else
 //#include "dm9051_lw_conf_at437x2spi.h" //or "dm9051_lw_conf_at415x2spi.h"
 //#endif
+
+/*
+In xxx_int.c, below function can call the 'dm9051_irqlines_proc()',
+To have interrupt mode support function.
+
+	void EXINT9_5_IRQHandler(void)
+	{
+	  dm9051_irqlines_proc();
+	}
+*/
 
 void dm9051_irqlines_proc(void)
 {
@@ -215,6 +225,24 @@ void dm_delay_ms(uint16_t nms) {
   */
 static void spi_add(void) //=== pins_config(); //total_eth_count++;
 {
+//.#ifndef AT32F437xx
+  //Setting of Non-f437
+  if (spi_number() == SPI1) {
+	  if  (spi_iomux() & IO_CRM_CLOCK) {
+
+		#ifndef AT32F437xx //.
+	    crm_periph_clock_enable(CRM_IOMUX_PERIPH_CLOCK, TRUE); //Non-f437,iomux-config
+	    gpio_pin_remap_config(SWJTAG_GMUX_010, TRUE); //Non-f437,iomux-config
+		#endif //.
+	  }
+	  if  (spi_iomux() & IO_MUX_PINREMAP) {
+
+		#ifndef AT32F437xx //.
+		  gpio_pin_remap_config(SPI1_MUX_01, TRUE); //Non-f437,remap
+		#endif //.
+	  }
+  }
+//.#endif
   gpio_pin_config(&gpio_wire_sck(), GPIO_PULL_NONE); //,GPIO_MODE_MUX
   gpio_pin_config(&gpio_wire_mi(), GPIO_PULL_NONE); //,GPIO_MODE_MUX
   gpio_pin_config(&gpio_wire_mo(), GPIO_PULL_NONE); //,GPIO_MODE_MUX //GPIO_PULL_UP; //test ffff
@@ -256,6 +284,7 @@ int dm9051_boards_initialize(void)
 
   //dm9051_init(&mac_addresse[0][0]);
   //dm9051_init(&mac_addresse[1][0]);
+  delay_ms(30);
   return ETHERNET_COUNT;
 }
 

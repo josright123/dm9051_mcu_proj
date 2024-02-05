@@ -231,7 +231,7 @@ int check_chip_id(uint16_t id);
 uint16_t dm9051_init(const uint8_t *adr);
 uint16_t dm9051_rx(uint8_t *buff);
 void dm9051_tx(uint8_t *buf, uint16_t len);
-void dm9051_reset_process(void);
+void hdlr_reset_process(enable_t cfgrcv);
 #endif
 
 void dm9051_start(const uint8_t *adr);

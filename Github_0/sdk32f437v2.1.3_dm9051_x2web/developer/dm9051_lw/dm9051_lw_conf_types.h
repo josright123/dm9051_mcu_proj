@@ -192,8 +192,8 @@ const static spi_dev_t devconf_XXX = {
 #endif
 };
 
-const optsex_t dm9051optsex = {
-	FALSE,
+const optsex_t _dm9051optsex = {
+	DM_FALSE,
 	MBNDRY_WORD, "MBNDRY_WORD",
 	CS_EACH, "CS_EACH_MODE",
 	0, //phy27
@@ -232,10 +232,18 @@ typedef enum
 } gpio_mux_sel_type;
 #endif
 
+//typedef enum {
+//} iomux_t;
+#define  IO_MUX_NULL                    	((uint16_t)0x0000) /*!< subordinate  */
+#define  IO_MUX_PINREMAP                 	((uint16_t)0x0001) /*!< subordinate mode a (such as f413)*/
+#define  IO_MUX_GPIOMUX                 	((uint16_t)0x0002) /*!< subordinate mode b (such as f437) */
+#define  IO_CRM_CLOCK                 		((uint16_t)0x0100) /*!< subordinate mode c (such as f413 clock) */
+
 typedef struct spihead_sel_st {
   char *spi_name;
   spi_type *spi_num;        		//= SPIPORT;
   crm_periph_clock_type spi_crm_clk;	//= SPI_CRM_CLK;
+  uint16_t iomux;
 } spihead_t;
 
 typedef struct gpio_sel_st {
@@ -294,31 +302,24 @@ struct modscfg_st {
 
 // -
 
-#define IS_OPTS_DATA(datatype,name) \
-	datatype name; \
-	char *desc##name;
-
 typedef struct {
 	//.uint8_t mac_addresse[MAC_ADDR_LENGTH];
 	//.uint8_t phy27;
-	char *set_name;
+	//.char *set_name;
+	//.enable_t test_plan_include; //whether run test_plan fnc!
 	
-	confirm_state test_plan_include; //whether run test_plan fnc!
-	confirm_state test_plan_log; //log when test_plan func, WE also use in x2web project.
+//#define OPTS_FUNC_DATA
+//#undef OPTS_FUNC_DATA
+	#if 0
+	/*#define DM_MACRO(rtype,field) \
+		rtype field; \
+		char *desc##field;*/
+	#endif
+
+#undef DM_TYPE
+#define DM_TYPE		1
+#include "dm_types.h"
 	
-	//uint8_t iomode;
-	//char *desciomode;
-	//csmode_t csmode; //longcsmode //long chip_select mode
-	//char *desccsmode; //desclongcsmode
-	IS_OPTS_DATA(uint8_t, iomode)
-	IS_OPTS_DATA(csmode_t, csmode)
-	
-	IS_OPTS_DATA(ncrmode_t, ncrmode)
-	IS_OPTS_DATA(uint8_t, promismode)
-	IS_OPTS_DATA(confirm_state, rxtypemode)
-	IS_OPTS_DATA(confirm_state, rxmode_checksum_offload)
-	IS_OPTS_DATA(confirm_state, flowcontrolmode)
-	IS_OPTS_DATA(confirm_state, onlybytemode)
 } optsex_t;
 
 /* Sanity2.

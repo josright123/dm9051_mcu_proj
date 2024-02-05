@@ -60,6 +60,7 @@ typedef enum {
 //confirm_state dm9051opts_confirm_stateflowcontrolmode(void);
 //char *dm9051opts_descflowcontrolmode(void);
 
+SG_FUNCTION(confirm_state, test_plan_include);
 SG_FUNCTION(confirm_state, test_plan_log);
 
 IS_FUNCTION(uint8_t, iomode);
@@ -71,8 +72,10 @@ IS_FUNCTION(ncrmode_t, ncrmode);
 IS_FUNCTION(confirm_state, flowcontrolmode); //confirm_state
 IS_FUNCTION(confirm_state, rxmode_checksum_offload); //confirm_state
 
+#define get_testplaninclude			IS_GET_INSTEAD(confirm_state, test_plan_include) //only get is documented export!
 #define get_testplanlog				IS_GET_INSTEAD(confirm_state, test_plan_log)
 #define set_testplanlog				IS_SET_INSTEAD(confirm_state, test_plan_log)
+
 #define iomode						IS_INSTEAD(uint8_t, iomode)
 #define promismode					IS_INSTEAD(uint8_t, promismode)
 #define csmode						IS_INSTEAD(csmode_t, csmode) //dm9051opts_csmode_tcsmode
@@ -121,12 +124,12 @@ void mstep_set_net_index(int i);
 void mstep_next_net_index(void);
 
 char *mstep_spi_conf_name(void);
+char *mstep_conf_onfo(void);
 char *mstep_conf_cpu_spi_ethernet(void);
+char *mstep_conf_cpu_cs_ethernet(void);
 char *mstep_conf_type(void);
 //int mstep_conf_spi_count(void);
 
 int mstep_dm9051_index(void);
-
-void GpioDisplay(void);
 
 #endif //__DM9051_ENV_H

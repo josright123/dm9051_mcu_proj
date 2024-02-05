@@ -551,7 +551,7 @@ ip4_input(struct pbuf *p, struct netif *inp)
 		//	lwip_htons((u16_t)(inp->ip_addr.addr >> 16)));
 			
 		#if 1
-		if (get_testplanlog()) {
+		if (get_testplanlog(test_plan_log)) {
 		   printf("%d. ip4_input_accept, NETIF_FOREACH(netif) ip_addr %"U16_F".%"U16_F".%"U16_F".%"U16_F", netif->link_speed %u\r\n", ++jjaccept, 
 			ip4_addr1_16(netif_ip4_addr(netif)), //ip_addr, 
 			ip4_addr2_16(netif_ip4_addr(netif)),

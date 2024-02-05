@@ -46,8 +46,8 @@ void dm9051_irqlines_proc(void)
   int i;
 
   for (i = 0; i < ETHERNET_COUNT; i++) { //get_eth_interfaces()
-	  if (exint_scfg_exister()) {  //[To be enum , e.g. intr_pack[i], if multi-cards]
-		  if (exint_flag_get(exint_extline()) != RESET) //if (exint_flag_get(EXINT_LINE_7) != RESET) //from intr_data()
+	  if (exint_exister()) {  //[To be enum , e.g. intr_pack[i], if multi-cards]
+		  if (exint_flag_get(exint_extline()) != RESET) //if (exint_flag_get(EXINT_LINE_7) != RESET)
 		  {
 			#if 0
 			//ethernetif_line7_proc();
@@ -243,10 +243,10 @@ void exint_add(void)
 int dm9051_board_initialize(void)
 {
   int i;
-  //.bannerline();
+  //.bannerline_log();
   //.GpioDisplay();
 	
-  //.bannerline();
+  //.bannerline_log();
   for (i = 0; i < ETHERNET_COUNT; i++) { //get_eth_interfaces()
 	mstep_set_net_index(i);
 	

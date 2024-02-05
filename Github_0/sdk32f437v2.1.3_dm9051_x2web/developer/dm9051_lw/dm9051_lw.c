@@ -39,11 +39,12 @@
  */
 #include "dm9051_lw_conf.h"
 #include "dm9051_lw.h"
+#include "dm9051_lw_log_inc.h"
 //#include "testproc/testproc_lw.h" //#include "testproc/dm9051_lw_testproc.h"
 //#include "netconf.h"
 //#include "testproc/testproc_lw.h"
 
-static void dm9051_phycore_on(void);
+static void dm9051_phycore_on(uint16_t nms);
 static void dm9051_core_reset(void);
 static void dm9051_set_par(const uint8_t *macadd);
 static void dm9051_set_mar(void);
@@ -56,88 +57,28 @@ static u16 unlink_count[ETHERNET_COUNT], unlink_stamp[ETHERNET_COUNT];
 
 #define UNLINK_COUNT_RESET	10000 //30000 //60000
 
-#if 0
-static void DM9051_Poweron_Reset(void)
-{
-	cpin_poweron_reset();
-}
-static uint8_t DM9051_Read_Reg(uint8_t reg) //static (todo)
-{	
-	return cspi_read_reg(reg);
-	/*spi_write_mem(u8 *buf, u16 len);
-	
-	union {
-	uint8_t rxpad;
-	uint8_t val;
-	} rd;
-	dm9051_if.cs_low();
-	dm9051_spi_command_write(reg | OPC_REG_R);
-	rd.val = dm9051_spi_dummy_read();
-	dm9051_if.cs_high();
-	return rd.val;*/
-}
-static void DM9051_Write_Reg(uint8_t reg, uint8_t val)
-{
-	cspi_write_reg(reg, val);
-	/*dm9051_if.cs_low();
-	dm9051_spi_command_write(reg | OPC_REG_W);
-	dm9051_spi_command_write(val);
-	dm9051_if.cs_high();*/
-}
-static uint8_t DM9051_Read_Mem2X(void)
-{
-	return cspi_read_mem2x();
-	/*int i;
-	union {
-	uint8_t un;
-	uint8_t rxb;
-	} rd;
-	dm9051_if.cs_low();
-	dm9051_spi_command_write(DM9051_MRCMDX | OPC_REG_R);
-	for(i=0; i<2; i++)
-		rd.rxb = dm9051_spi_dummy_read();
-	dm9051_if.cs_high();
-	return rd.rxb;*/
-}
-static void DM9051_Read_Mem(u8 *buf, u16 len)
-{
-	cspi_read_mem(buf, len);
-	/*int i;
-	dm9051_if.cs_low();
-	dm9051_spi_command_write(DM9051_MRCMD | OPC_REG_R);
-	if (len & 1)
-		len++;
-	for(i=0; i<len; i++)
-		buf[i] = dm9051_spi_dummy_read();
-	dm9051_if.cs_high();*/
-}
-static void DM9051_Write_Mem(u8 *buf, u16 len)
-{
-	cspi_write_mem(buf, len);
-	/*int i;
-	dm9051_if.cs_low();
-	dm9051_spi_command_write(DM9051_MWCMD | OPC_REG_W);
-	if (len & 1)
-		len++;
-	for(i=0; i<len; i++)
-		dm9051_spi_command_write(buf[i]);
-	dm9051_if.cs_high();*/
-}
-#endif
-
 void dm9051_poweron_rst(void)
 {
 	DM9051_Poweron_Reset();
 }
 
 int check_chip_id(uint16_t id) {
-	return (id == (DM9051_ID >> 16)
+	int res = (id == (DM9051_ID >> 16)
 			|| id == (DM9052_ID >> 16)
 	#if 1
 	//_CH390
-			|| id == (0x91511c00 >> 16) /* Test CH390 */
+			|| id == (0x91511c00 >> 16)
+			|| id == (0x91001c00 >> 16) /* Test CH390 */
 	#endif
 		) ? 1 : 0;
+	
+	if (id == (0x91001c00 >> 16)) {
+		printf("---------------------- \r\n");
+		printf("--- warn case %04x --- \r\n", id);
+		printf("---------------------- \r\n");
+	}
+		
+	return res;
 }
 
 uint16_t read_chip_id(void) {
@@ -206,7 +147,7 @@ uint16_t phy_read(uint16_t uReg)
   //_CH390
   //if (uReg == PHY_STATUS_REG)
   //{
-	//dm9051_phycore_on(); //if (uReg == PHY_STATUS_REG)
+	//dm9051_phycore_on(0); //if (uReg == PHY_STATUS_REG)
   //}
 #endif
 	
@@ -305,7 +246,7 @@ void test_plan_100mf(ncrmode_t ncrmode, u8 first_log)
 				uint16_t bmcr= phy_read(0);
 				printf("  RESET: REG27 write : %04x\r\n", 0xe000);
 				printf("  RESET: BMCR write/read : %04x/%04x\r\n", 0x2100, bmcr);
-				printf("  RESET: dm9051_core_reset [set link parameters, Force mode for 100M Full]\r\n");
+				printf("  RESET: _core_reset [set link parameters, Force mode for 100M Full]\r\n");
 			}
 		}
 		//[dm9051c]
@@ -314,7 +255,7 @@ void test_plan_100mf(ncrmode_t ncrmode, u8 first_log)
 			if (first_log) {
 				uint16_t bmcr= phy_read(0);
 				printf("  RESET: BMCR write/read : %04x/%04x\r\n", 0x3300, bmcr);
-				printf("  RESET: dm9051_core_reset [set link parameters, A.N. for 100M Full]\r\n");
+				printf("  RESET: _core_reset [set link parameters, A.N. for 100M Full]\r\n");
 			}
 		}
 	  #endif
@@ -335,78 +276,107 @@ void test_plan_rx_checksum_enable(void) //(u8 first_log)
 }
 #endif
 
-static void dm9051_phycore_on(void) {
-	  printf("...................... dm9051_phycore_on .......................\r\n");
+static void dm9051_delay_in_core_process(uint16_t nms, char *zhead) //finally, dm9051_lw.c
+{
+	printf(": dm9051_driver ::: %s delay %u ms.. : \r\n", zhead, nms);
+	if (nms)
+	  dm_delay_ms(nms); //_delay_ms(nms); //from James' advice! to be determined with a reproduced test cases!!
+}
+
+static void dm9051_ncr_reset(uint16_t nms) {
+	  DM9051_Write_Reg(DM9051_NCR, DM9051_REG_RESET); //iow(DM9051_NCR, NCR_RST);
+	  dm9051_delay_in_core_process(nms, "_core_reset<>"); //dm_delay_ms(250); //CH390-Est-Extra
+}
+
+static void dm9051_phycore_on(uint16_t nms) {
 	  DM9051_Write_Reg(DM9051_GPR, 0x00);		//Power on PHY
-	  dm_delay_ms(5); //CH390-Est-Extra
+	  dm9051_delay_in_core_process(nms, "_phycore_on<>");
+	  //=
+	  //printf("...................... dm9051_phycore_on .......................\r\n");
+	  //dm_delay_ms(nms); //CH390-Est-Extra, 5~250,...
 }
 
 static void dm9051_core_reset(void)
 {
-	  int i = mstep_get_net_index();
-	  u8 if_log = first_log_get(i); //+first_log_clear(i);
-	  //#if TEST_PLAN_MODE
-	  //#endif
+	if (OPT_CONFIRM(generic_core_rst)){
+		printf("-----------------------------------------------------------------------------------------\r\n");
+		printf("--------------------- write a long delay type procedure ,for core reset -----------------\r\n");
+		printf("-----------------------------------------------------------------------------------------\r\n");
+		//CH390
+		  //printf("  _core_reset[%d]()\r\n", mstep_get_net_index());
 
-	  //u8 gpcr = DM9051_Read_Reg(DM9051_GPCR);
-	  //DM9051_Write_Reg(DM9051_GPCR, gpcr | 0x01); //bit-0
-
-	#if 0
-	  dm9051_clear_flags(lw_flag, DM9051_FLAG_LINK_UP);
-	  unlink_count = unlink_stamp = 0;
-	#endif
-	
-#if 0
-	//DAVICOM
-	  printf("  dm9051_core_reset[%d]()\r\n", i);
-	  dm9051_phycore_on();
-
-	  DM9051_Write_Reg(DM9051_NCR, DM9051_REG_RESET); //iow(DM9051_NCR, NCR_RST);
-#else
-	//CH390
-	  printf("  dm9051_core_reset[%d]()\r\n", i);
-	  DM9051_Write_Reg(DM9051_NCR, DM9051_REG_RESET); //iow(DM9051_NCR, NCR_RST);
-	  dm_delay_ms(2); //CH390-Est-Extra
-	  
-	  dm9051_phycore_on();
-#endif
-
-	  do {
-		if (if_log) {
-		  test_plan_mbndry();
-		} else
+		  dm9051_ncr_reset(OPT_U8(hdir_x2ms)*2);
+		  dm9051_phycore_on(250);
+		
 		  DM9051_Write_Reg(DM9051_MBNDRY, OPT_U8(iomode));
-	  } while(0);
-//#if TEST_PLAN_MODE
-//#else
-//	  DM9051_Write_Reg(DM9051_MBNDRY, OPT_U8(iomode));
-//#endif
+		  DM9051_Write_Reg(DM9051_PPCR, PPCR_PAUSE_COUNT); //iow(DM9051_PPCR, PPCR_SETTING); //#define PPCR_SETTING 0x08
+		  DM9051_Write_Reg(DM9051_LMCR, LMCR_MODE1);
+		  DM9051_Write_Reg(DM9051_INTR, INTR_ACTIVE_LOW); // interrupt active low
+	} else {
+		  int i = mstep_get_net_index();
+		  u8 if_log = first_log_get(i); //+first_log_clear(i);
 
-	  DM9051_Write_Reg(DM9051_PPCR, PPCR_PAUSE_COUNT); //iow(DM9051_PPCR, PPCR_SETTING); //#define PPCR_SETTING 0x08
-	  DM9051_Write_Reg(DM9051_LMCR, LMCR_MODE1);
-	  #if 1
-	  DM9051_Write_Reg(DM9051_INTR, INTR_ACTIVE_LOW); // interrupt active low
-	  #endif
-	
-#if TEST_PLAN_MODE
-	if (OPT_CONFIRM(rxmode_checksum_offload))
-		DM9051_Write_Reg(DM9051_RCSSR, RCSSR_RCSEN);
-#else
-	/* if (isrxmode_checksum_offload())
-			DM9051_Write_Reg(DM9051_RCSSR, RCSSR_RCSEN); */
-#endif
+		  //u8 gpcr = DM9051_Read_Reg(DM9051_GPCR);
+		  //DM9051_Write_Reg(DM9051_GPCR, gpcr | 0x01); //bit-0
 
-	/* flow_control_config_init */
-	if (OPT_CONFIRM(flowcontrolmode)) {
-	  #if TEST_PLAN_MODE == 0
-		printf("  core_reset: %s, fcr value %02x\r\n", dm9051opts_descflowcontrolmode(), FCR_DEFAULT_CONF);
-	  #endif
-		DM9051_Write_Reg(DM9051_FCR, FCR_DEFAULT_CONF);
+		#if 0
+		  dm9051_clear_flags(lw_flag, DM9051_FLAG_LINK_UP);
+		  unlink_count = unlink_stamp = 0;
+		#endif
+		
+	#if 0
+		//DAVICOM
+		  printf("  _core_reset[%d]()\r\n", i);
+		  dm9051_phycore_on(5);
+
+		  DM9051_Write_Reg(DM9051_NCR, DM9051_REG_RESET); //iow(DM9051_NCR, NCR_RST);
+		  dm_delay_ms(0);
+	#else
+		//CH390
+		  printf("  _core_reset[%d]()\r\n", i);
+		  DM9051_Write_Reg(DM9051_NCR, DM9051_REG_RESET); //iow(DM9051_NCR, NCR_RST);
+		  dm_delay_ms(2); //CH390-Est-Extra
+		  
+		  dm9051_phycore_on(5);
+	#endif
+
+		  do {
+			if (if_log) {
+			  test_plan_mbndry();
+			} else
+			  DM9051_Write_Reg(DM9051_MBNDRY, OPT_U8(iomode));
+		  } while(0);
+	//#if TEST_PLAN_MODE
+	//#else
+	//	  DM9051_Write_Reg(DM9051_MBNDRY, OPT_U8(iomode));
+	//#endif
+
+		  DM9051_Write_Reg(DM9051_PPCR, PPCR_PAUSE_COUNT); //iow(DM9051_PPCR, PPCR_SETTING); //#define PPCR_SETTING 0x08
+		  DM9051_Write_Reg(DM9051_LMCR, LMCR_MODE1);
+		  #if 1
+		  DM9051_Write_Reg(DM9051_INTR, INTR_ACTIVE_LOW); // interrupt active low
+		  #endif
+		
+	#if TEST_PLAN_MODE
+		if (OPT_CONFIRM(rxmode_checksum_offload))
+			DM9051_Write_Reg(DM9051_RCSSR, RCSSR_RCSEN);
+	#else
+		/* if (isrxmode_checksum_offload())
+				DM9051_Write_Reg(DM9051_RCSSR, RCSSR_RCSEN); */
+	#endif
+
+		/* flow_control_config_init */
+		if (OPT_CONFIRM(flowcontrolmode)) {
+		  #if TEST_PLAN_MODE == 0
+			printf("  core_reset: %s, fcr value %02x\r\n", dm9051opts_descflowcontrolmode(), FCR_DEFAULT_CONF);
+		  #endif
+			DM9051_Write_Reg(DM9051_FCR, FCR_DEFAULT_CONF);
+		}
+
+	#if TEST_PLAN_MODE
+		test_plan_100mf(OPT_NCR(ncrmode), if_log); //= dm9051opts_ncrmode_tncrmode()
+	#endif
 	}
-
-#if TEST_PLAN_MODE
-	test_plan_100mf(OPT_NCR(ncrmode), if_log); //= dm9051opts_ncrmode_tncrmode()
-#endif
 }
 
 static void dm9051_show_rxbstatistic(u8 *htc, int n)
@@ -480,7 +450,7 @@ static void dm9051_set_recv(void)
 	
 	//#if _TEST_PLAN_MODE //TestPlan
 	if (OPT_U8(promismode)) { //u8promismode(), dm9051opts_promismode()
-		printf("SETRECV: test rx_promiscous (write_reg, 0x05, (1 << 2))\r\n");
+		printf("SETRECV: ::: test rx_promiscous (write_reg, 0x05, (1 << 2))\r\n");
 		DM9051_Write_Reg(DM9051_RCR, RCR_DEFAULT | RCR_PRMSC | RCR_RXEN); //promiscous
 	}
 	//#else
@@ -504,24 +474,10 @@ u8 ret_fire_time(u8 *histc, int csize, int i, u8 rxb)
 	return 0;
 }
 
-static void dm9051_delay_in_core_process(uint16_t nms) //finally, dm9051_lw.c
-{
-  #if 1
-	printf("dm9051_driver setup delay %u ms.. : ", nms);
-	if (nms)
-	  dm_delay_ms(nms); //_delay_ms(nms); //from James' advice! to be determined with a reproduced test cases!!
-  #endif
-}
-
-void dm9051_reset_process(void)
+void hdlr_reset_process(enable_t cfgrcv)
 {
 	printf(".(Rst.process[%d])\r\n", mstep_get_net_index());
 	dm9051_core_reset(); //As: printf("rstc %d ,because rxb %02x (is %d times)\r\n", rstc, rxbyte, times);
-  #if 0
-	dm9051_delay_in_core_process(300); printf("dm9051_core_reset<>\r\n"); 
-  #else
-	dm9051_delay_in_core_process(0); printf("dm9051_core_reset<>\r\n"); 
-  #endif
 
   #if 0
 	do { //[want more]
@@ -538,16 +494,19 @@ void dm9051_reset_process(void)
 	dm9051_rx_mode_subprocess(); //dm9051_set_recv(); //of _dm9051_rx_mode();
 	//dm9051_link_show(); //dm9051_show_link(); //_dm9051_show_timelinkstatistic(); //Add: show
 #else
-	
-  #if 0 //or [A].AS In dm9051_init_setup(), no call-
+
+  #if 0 //or [A].AS In _dm9051_init_setup(), no call-
 	//=dm9051_start(adr);
 	dm9051_mac_adr(adr);
 	dm9051_rx_mode();
   #endif
   #if 1 //or [B].AS dm9051_init's whole operations. Only for _CH390
-	//CH390
-	exint_menable(NVIC_PRIORITY_GROUP_0); //dm9051_board_irq_enable(); 
-	dm9051_start(mstep_eth_mac());
+
+	if (cfgrcv) {
+		//CH390
+		exint_menable(NVIC_PRIORITY_GROUP_0); //dm9051_board_irq_enable(); 
+		dm9051_start(mstep_eth_mac());
+	}
   #endif
 #endif
 }
@@ -555,12 +514,11 @@ void dm9051_reset_process(void)
 static u16 err_hdlr(char *errstr, u32 valuecode, u8 zerochk)
 {
 	if (zerochk && valuecode == 0)
-		//.printf("_dm9051f %s : NoError as %u\r\n", errstr, valuecode); //or "0x%02x"
-		return 0;
+		return 0; //.printf(": NoError as %u\r\n", valuecode);
 		
 	printf(errstr, valuecode); //or "0x%02x"
 
-	dm9051_reset_process();
+	hdlr_reset_process(OPT_CONFIRM(hdlr_confrecv));
 	return 0;
 }
 
@@ -765,7 +723,7 @@ uint16_t dm9051_rx(uint8_t *buff)
 					#endif
 				}
 								
-				if (get_testplanlog()) { //get_dm9051opts_testplanlog()
+				if (get_testplanlog(test_plan_log)) { //get_dm9051opts_testplanlog()
 					if ((rxbyte & RCSSR_IPP)) {
 						ipf = 1;
 						if (!tp_all_done())
@@ -818,21 +776,28 @@ uint16_t dm9051_rx(uint8_t *buff)
 			ReceiveData[0], ReceiveData[1], ReceiveData[2], ReceiveData[3], rx_len);
 	#endif
 	
+	#if 0
 	do {
 		static int dump_odd_c = 0;
 		if (rx_len & 1) {
 		  printf("\r\n+ drv +oddfound %d (len %d)\r\n", ++dump_odd_c, rx_len);
 		}
 	} while(0);
+	#endif
 	
 	DM9051_RX_BREAK((rx_status & 0xbf), return ev_status(rx_status)); //_err_hdlr("_dm9051f rx_status error : 0x%02x\r\n", rx_status, 0)
 	DM9051_RX_BREAK((rx_len > RX_POOL_BUFSIZE), return err_hdlr("_dm9051f rx_len error : %u\r\n", rx_len, 0));
 
 	DM9051_Read_Mem(buff, rx_len);
 	DM9051_Write_Reg(DM9051_ISR, 0x80);
+	
+#if 1
+	if (!OPT_CONFIRM(tx_endbit))
+		dm_delay_ms(1);
+#endif
 
 	#if TEST_PLAN_MODE
-	if (get_testplanlog()) { //get_dm9051opts_testplanlog()
+	if (get_testplanlog(test_plan_log)) { //get_dm9051opts_testplanlog()
 		if (ipf && !tp_all_done()) 
 			printf("DM9RX: IP, checksum %02x %02x\r\n", buff[24], buff[25]);
 		if (udpf && !tp_all_done())
@@ -848,6 +813,15 @@ uint16_t dm9051_rx(uint8_t *buff)
 	}
 	#endif
 	
+#if 1
+	/* An assurence */
+	if (debug_rx(buff, rx_len)) { //ok. only 1st-pbuf
+		debug_rx_inc_count();
+		hdlr_reset_process(OPT_CONFIRM(hdlr_confrecv)); //~return ev_rxb(rxbyte);
+		return 0;
+	}
+#endif
+
 	return rx_len;
 }
 
@@ -857,12 +831,16 @@ void dm9051_tx(uint8_t *buf, uint16_t len)
 	DM9051_Write_Reg(DM9051_TXPLH, (len >> 8) & 0xff);
 	DM9051_Write_Mem(buf, len);
 	DM9051_Write_Reg(DM9051_TCR, TCR_TXREQ); /* Cleared after TX complete */
-	DM9051_TX_DELAY((DM9051_Read_Reg(DM9051_TCR) & TCR_TXREQ), dm_delay_us(5));
+	
+	if (OPT_CONFIRM(tx_endbit))
+		DM9051_TX_DELAY((DM9051_Read_Reg(DM9051_TCR) & TCR_TXREQ), dm_delay_us(5));
+	else
+		dm_delay_ms(1);
 }
 
 char *display_identity_bannerline_title = NULL;
-char *display_identity_bannerline_default =  ": Read the revisions";
-char *display_identity_bannerline_defaultN = ": Bare bare registers";
+char *display_identity_bannerline_default =  ": Read device";
+char *display_identity_bannerline_defaultN = ": Bare device";
 
 int display_identity(char *spiname, uint16_t id, uint8_t *ids, uint8_t id_adv)
 {
@@ -872,25 +850,26 @@ int display_identity(char *spiname, uint16_t id, uint8_t *ids, uint8_t id_adv)
 	return 0;
 }
 
-	void display_chipmac(void)
-	{
-		//int i;
-		//.bannerline_log();
-		//for (i = 0; i< ETHERNET_COUNT; i++) {
-			//mstep_set_net_index(i);
-			//Read par
-			uint8_t buf[6];
-		
-			display_identity_bannerline_defaultN = ": Read bare registers";
-			cspi_read_regs(DM9051_PAR, buf, 6, OPT_CS(csmode)); //dm9051opts_csmode_tcsmode()
-			printf("%s[%d] ::: chip-mac %02x%02x%02x%02x%02x%02x\r\n",
-				display_identity_bannerline_title ? display_identity_bannerline_title : display_identity_bannerline_defaultN,
-				mstep_get_net_index(), buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-		//}
-	}
+void display_chipmac(void)
+{
+	//int i;
+	//.bannerline_log();
+	//for (i = 0; i< ETHERNET_COUNT; i++) {
+		//mstep_set_net_index(i);
+		//Read par
+		uint8_t buf[6];
 
+		display_identity_bannerline_defaultN = ": bare device";
+		cspi_read_regs(DM9051_PAR, buf, 6, OPT_CS(csmode)); //dm9051opts_csmode_tcsmode()
+		printf("%s[%d] ::: chip-mac %02x%02x%02x%02x%02x%02x\r\n",
+			display_identity_bannerline_title ? display_identity_bannerline_title : display_identity_bannerline_defaultN,
+			mstep_get_net_index(), buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+	//}
+}
+
+#if 0
 int display_verify_chipid(char *str, char *spiname, uint16_t id) {
-	if (check_chip_id(id)) { //(id == (DM9051_ID/DM9052_ID >> 16))
+	if (_check_chip_id(id)) { //(id == (DM9051_ID/DM9052_ID >> 16))
 		chipid_on_pin_code_log_s(spiname, str, id);
 	//#if NON_CHIPID_STOP == 1
 	//	printf("Chip ID CHECK experiment! Succeed OK!!\r\n");
@@ -905,37 +884,20 @@ int display_verify_chipid(char *str, char *spiname, uint16_t id) {
 	//#endif
 	//}
 }
+#endif
 
 uint16_t dm9051_init_setup(const uint8_t *adr)
 {
-	uint16_t id;
 	uint8_t ids[5], id_adv;
 
-  #if 1
-	//bannerline_log();
-	//printf(": usage with csmode :      %s\r\n", dm9051opts_desccsmode());
-	//printf("  ::: usage with ncrmode :     %s\r\n", dm9051opts_descncrmode());
-	//printf("  ::: usage with rx's mode :   %s\r\n", dm9051opts_descpromismode());
-  #endif
-	id = read_chip_id();
+	uint16_t id = read_chip_id();
 	read_chip_revision(ids, &id_adv);
 	
 	display_identity(mstep_spi_conf_name(), id, ids, id_adv);
-	//display_verify_chipid("dm9051_init", mstep_spi_conf_name(), id);
-	//display_ids("dm9051_init", ids);
-	//display_ida("dm9051_init", id_adv);
 	display_chipmac();
-	
 	if (!check_chip_id(id))
 		return id;
 	
-	printf(".(Rst.setup[%d])\r\n", mstep_get_net_index());
-	dm9051_core_reset();
-#if 0
-	//=dm9051_start(adr);
-	dm9051_mac_adr(adr);
-	dm9051_rx_mode();
-#endif
 	return id;
 }
 
@@ -946,7 +908,7 @@ uint16_t dm9051_init_setup(const uint8_t *adr)
 
 void dm9051_start(const uint8_t *adr)
 {
-	display_identity_bannerline_defaultN = ": write bare registers";
+	display_identity_bannerline_defaultN = ": wr-bare device";
 	printf("%s[%d] ::: chip-mac %02x%02x%02x%02x%02x%02x\r\n",
 				display_identity_bannerline_title ? display_identity_bannerline_title : display_identity_bannerline_defaultN,
 				mstep_get_net_index(), adr[0], adr[1], adr[2], adr[3], adr[4], adr[5]);
@@ -960,15 +922,16 @@ void dm9051_start(const uint8_t *adr)
 uint16_t dm9051_init(const uint8_t *adr)
 {
 	uint16_t id;
-	
+
 	first_log_init();
 
 //#if 0
 //	id = dm9051_init_setup(adr);
 //#else
 	bannerline_log();
-	printf("Read %s, %s, to set mac/ %s, %02x%02x%02x%02x%02x%02x\r\n",
+	printf("%s, device[%d] %s, %s, to set mac/ %02x%02x%02x%02x%02x%02x\r\n",
 			mstep_conf_info(),
+			mstep_get_net_index(),
 			mstep_conf_cpu_spi_ethernet(),
 			mstep_conf_cpu_cs_ethernet(),
 			adr[0],
@@ -980,9 +943,23 @@ uint16_t dm9051_init(const uint8_t *adr)
 	id = dm9051_init_setup(adr);
 	if (!check_chip_id(id))
 		return id;
-	exint_menable(NVIC_PRIORITY_GROUP_0); //dm9051_board_irq_enable(); 
-	dm9051_start(adr);
 //#endif
+
+#if 0
+	/*
+		printf(".(Rst.setup[%d])\r\n", mstep_get_net_index());
+		dm9051_core_reset();
+
+	#if 0
+		//=dm9051_start(adr);
+		dm9051_mac_adr(adr);
+		dm9051_rx_mode();
+	#endif
+		exint_menable(NVIC_PRIORITY_GROUP_0); //dm9051_board_irq_enable(); 
+		dm9051_start(adr);*/
+#else
+	hdlr_reset_process(DM_TRUE);
+#endif
 	return id;
 }
 

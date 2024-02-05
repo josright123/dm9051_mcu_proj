@@ -359,7 +359,7 @@ char *mstep_spi_conf_name(void)
 	return spi_conf_name();
 }
 
-char *mstep_conf_onfo(void) {
+char *mstep_conf_info(void) {
 	return info_conf_name();
 }
 

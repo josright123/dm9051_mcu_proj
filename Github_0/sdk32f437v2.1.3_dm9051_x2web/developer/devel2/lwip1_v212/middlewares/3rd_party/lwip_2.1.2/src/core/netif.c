@@ -283,7 +283,7 @@ netif_input(struct pbuf *p, struct netif *inp)
 	err_t res;
 
 	#if 1
-	if (get_testplanlog())
+	if (get_testplanlog(test_plan_log))
 		nif_showpbuf("netif_input,rx-process", inp, p);
 	#endif
 	  
